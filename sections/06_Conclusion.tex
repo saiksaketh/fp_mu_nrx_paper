@@ -1,6 +1,31 @@
 \section{Conclusion and Future Work}
 \label{conclusion}
-The 4-bit \gls{QAT} meets 10\% \gls{BLER} targets in challenging \gls{NLoS} scenarios where 4-bit \gls{PTQ} fails, maintaining $\leq$0.8~dB \gls{SNR} gap to \texttt{FP32}. We intentionally kept channel and network configurations identical to \gls{PTQ} to enforce a controlled comparison and attribute gains specifically to the training methodology. Recent work shows that pruning and quantization trade off accuracy differently \cite{harma2025effective}, having established a \gls{QAT} baseline here, incorporating further compression methods via joint sparsity remains future work. Furthermore, our \gls{QAT} framework can be extended to low-bit activation quantization and mixed-precision weight–activation designs, which we also leave for future work.
+We studied weight-only \gls{QAT}---and \gls{QAT} combined with
+50\% magnitude pruning---for a standard-compliant MU-\gls{MIMO}
+5G~NR neural receiver, comparing integer grids (INT8/INT4) with
+floating-point microformats (FP8~E4M3 / FP4~E2M1). On the dual-user
+DoubleTDL-low uplink, 8-bit \gls{QAT} is effectively lossless: FP8 and
+INT8 match the \texttt{FP32} receiver within $0.03$\,dB at $10\%$
+\gls{BLER} and retain an $\sim$1.9\,dB gain over practical
+\gls{LS}--\gls{LMMSE} detection. At 4~bits the format choice is
+decisive. FP4~(E2M1) limits the gap to \texttt{FP32} to about
+$1.3$\,dB at both $10\%$ and $1\%$ \gls{BLER} while still beating
+\gls{LS}--\gls{LMMSE}; INT4 roughly doubles that penalty and falls
+behind the classical baseline. The same asymmetry appears under
+sparsity: 50\% pruning costs $\lesssim$0.1\,dB for 8-bit and FP4
+receivers, but drives INT4 more than $1$\,dB further away. Taken
+together, these results identify FP4~\gls{QAT} as a practical
+operating point for joint $8\times$ weight compression and 50\%
+sparsity on MU-\gls{MIMO} neural receivers, whereas ultra-low-bit
+integer quantization alone is not a reliable path once pruning is
+required.
 
-The $8\times$ weight compression enables hardware-software codesign: on-chip SRAM and bandwidth can target 4-bit storage while maintaining near-\texttt{FP32} performance. This enables lightweight inference on resource-constrained edge devices, reducing memory and latency for \gls{6G} deployment. The strong \gls{LoS} performance of 4-bit \gls{QAT} receivers also positions them as viable candidates for integrated sensing and communication as well as site-specific deployments.
-\vspace{-3mm}
+Looking ahead, we plan to extend the pipeline to activation
+quantization and native FP4/FP8 inference kernels (e.g., TensorRT on
+tensor-core \glspl{GPU}), and to stress-test the pruned FP4 receiver
+under higher-correlation channels, richer MCS sets, and larger user
+loads. Co-designing sparsity patterns with the quantization grid---
+rather than applying magnitude pruning post hoc---is a natural next
+step toward deployable, memory-efficient neural uplink receivers for
+\gls{6G} \gls{RAN}.
+)
