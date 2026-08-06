@@ -1,0 +1,204 @@
+\section{Quantization-Aware Neural Receiver}
+\label{sec:nrx_qat}
+
+We compress a 5G~NR-compliant multi-user uplink neural receiver using
+the weight-only \gls{QAT} and magnitude-pruning operators of
+Section~\ref{sec:qat_pruning}. The underlying detector is a
+convolutional graph neural network (CGNN) designed for flexible
+MU-\gls{MIMO} \gls{PUSCH} reception \cite{scamnrx}; related real-time
+deployment studies motivate tight memory budgets
+\cite{wiesmayr2024design}. Our focus is not on redesigning that
+architecture, but on making it amenable to low-bit integer and
+floating-point weights---with and without 50\% sparsity---while
+preserving link-level \gls{BLER}.
+
+\subsection{Uplink Setup}
+\label{sec:system_model}
+$U$ single-layer \glspl{UE} share the same time--frequency resources
+toward a base station with $B$ antennas. After OFDM demodulation, each
+resource element $(s,t)$ observes
+\begin{equation}
+\label{eq:mu_mimo}
+  \mathbf{y}_{s,t}
+  = \sum_{u=1}^{U}
+    \mathbf{H}_{s,t,u}\,\mathbf{x}_{s,t,u}
+    + \mathbf{n}_{s,t},
+  \qquad
+  \mathbf{n}_{s,t}\sim\mathcal{CN}(\mathbf{0},N_0\mathbf{I}),
+\end{equation}
+with $\mathbf{y}_{s,t}\in\mathbb{C}^{B}$. Payload bits are
+\gls{LDPC}-encoded and mapped to \gls{QAM} symbols; known
+\gls{DMRS} tones enable an initial least-squares channel estimate.
+The neural receiver consumes the full post-\gls{FFT} slot (data and
+pilots) and emits per-bit \glspl{LLR} for a conventional 5G~NR
+decoder.
+
+Unless stated otherwise we evaluate $U{=}2$, $B{=}4$, carrier
+$2.14$\,GHz, $30$\,kHz subcarrier spacing, and MCS index~14
+(16-\gls{QAM}, $R\approx0.48$) from Table~1 of \cite{3gpp38214}.
+\gls{DMRS} uses configuration type~1, mapping type~A, and one
+additional DMRS position. Training sees randomized 3GPP \gls{UMi}
+channels with $1$--$2$ active users and velocities up to
+$56$\,km/h; evaluation uses the dual-user DoubleTDL-low scenario of
+\cite{scamnrx} at fixed $56$\,km/h with $132$ \glspl{PRB}. Key
+parameters are collected in Table~\ref{tab:sim_params}.
+
+\begin{table}[t]
+\centering
+\caption{System, training, and evaluation parameters.}
+\label{tab:sim_params}
+\footnotesize
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Users $\times$ layers (eval) & $2\times1$ \\
+Rx antennas $B$ & 4 \\
+Carrier / SCS & 2.14\,GHz / 30\,kHz \\
+OFDM symbols / slot & 14 \\
+PRBs (train / eval) & 4 / 132 \\
+MCS (Table~1 \cite{3gpp38214}) & index 14 (16-QAM, $R\approx0.48$) \\
+DMRS & type~1, mapping~A, +1 position \\
+Channel (train) & 3GPP UMi, $0$--$56$\,km/h \\
+Channel (eval) & DoubleTDL-low \cite{scamnrx}, $56$\,km/h \\
+NRX depth $N_{\mathrm{it}}$ / state width $d_s$ & 8 / 56 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Receiver Used in This Work}
+\label{sec:architecture}
+We build on the CGNN receiver of \cite{scamnrx}: a small input CNN
+embeds each resource element into a state of dimension $d_s{=}56$;
+$N_{\mathrm{it}}{=}8$ unrolled blocks then mix information across
+users (dense aggregation) and across the time--frequency grid
+(separable convolutions); a final dense readout produces \glspl{LLR}.
+Separable layers factor into a depthwise spatial filter and a
+pointwise mixer---a split we exploit when pruning
+(Section~\ref{sec:pruning}). The same weights handle variable user
+counts and bandwidths, which is why training on $4$ \glspl{PRB}
+transfers to the $132$-\gls{PRB} evaluation grid. In the large
+configuration used here, both the input and state CNNs have widths
+$[128,128]$, aggregation uses width $64$, and the readout uses width
+$128$.
+
+For \gls{QAT}, every convolutional and dense kernel---depthwise,
+pointwise, aggregation, and readout---is passed through the
+fake-quantizer \eqref{eq:fake_quant} in INT8, INT4, FP8~(E4M3), or
+FP4~(E2M1). Biases and activations stay in \texttt{FP32}. This
+weight-only choice shrinks the dominant memory footprint while
+leaving the arithmetic path unchanged, matching the deployment
+setting targeted by low-precision tensor-core formats
+\cite{micikevicius2022fp8}.
+
+\subsection{Loss and Training Schedule}
+\label{sec:loss}
+Training maximizes bit-metric decoding quality under an auxiliary
+channel estimate. If $B$ are the coded bits on data tones,
+$\hat{L}$ the predicted \glspl{LLR}, and $\hat{\mathbf{h}}$ a
+refined channel from a second readout, we minimize
+\begin{align}
+\label{eq:bce}
+  \mathcal{L}_{\mathrm{BCE}}
+  &= -\mathbb{E}\!\left[
+       B\log\sigma(\hat{L})
+       +(1-B)\log\!\bigl(1-\sigma(\hat{L})\bigr)
+     \right], \\
+\label{eq:mse}
+  \mathcal{L}_{\mathrm{MSE}}
+  &= \mathbb{E}\!\bigl[
+       \|\hat{\mathbf{h}}-\mathbf{h}\|_{2}^{2}
+     \bigr], \\
+\label{eq:total_loss}
+  \mathcal{L}
+  &= \mathcal{L}_{\mathrm{BCE}}
+     + \lambda\,\mathcal{L}_{\mathrm{MSE}},
+\end{align}
+with $\sigma$ the sigmoid. Both terms are summed over all
+$N_{\mathrm{it}}$ unrolled receiver iterations, and $\lambda$ decays
+from $0.02$ to $0.01$ across two schedule phases. Each SGD step
+draws a mini-batch of $N_B{=}128$ independently simulated OFDM
+slots on-the-fly in Sionna \cite{sionna}, with random active-user
+counts, velocities in $[0,56]$\,km/h, and rate-adjusted $E_b/N_0$
+in a phase-dependent window of roughly $0$--$15$\,dB. The
+\texttt{FP32} baseline is trained with Adam; quantized models always
+warm-start from that checkpoint so that \gls{QAT} adapts an already
+competent detector rather than learning detection and quantization
+jointly from scratch.
+
+\subsection{QAT and Pruned Fine-Tuning}
+\label{sec:qat_protocol}
+Algorithm~\ref{alg:qat_prune} summarizes the pipeline. Every
+forward pass evaluates the neural receiver on $N_B$ OFDM slots under
+fake-quantized weights \eqref{eq:fake_quant}; the \gls{STE} updates
+the full-precision master copy. Optional magnitude pruning is applied
+only after \gls{QAT} has converged, followed by a short masked
+recovery fine-tune.
+
+\textbf{Concrete schedules used in our experiments.}
+All stages use $N_B{=}128$ slots per SGD step.
+\begin{itemize}
+  \item \emph{FP8~(E4M3) / FP4~(E2M1) QAT:}
+        $N_{\mathrm{QAT}}=5{\times}10^{4}+2{\times}10^{5}$
+        iterations at learning rates $10^{-4}$ then
+        $5{\times}10^{-5}$, i.e.\ $3.2{\times}10^{7}$ simulated
+        slots in total.
+  \item \emph{INT8 / INT4 QAT:}
+        $N_{\mathrm{QAT}}=10^{6}+9{\times}10^{6}$ iterations at
+        $10^{-4}$, i.e.\ $1.28{\times}10^{9}$ slots.
+  \item \emph{Post-prune fine-tune} (all formats, sparsity
+        $\rho{=}50\%$):
+        $N_{\mathrm{P}}=5{\times}10^{3}+10^{4}$ iterations at
+        $5{\times}10^{-5}$ then $2{\times}10^{-5}$, i.e.\
+        $1.92{\times}10^{6}$ additional slots, with hard projection
+        onto the prune mask after every update.
+\end{itemize}
+Depthwise kernels and the LLR readout are excluded from pruning;
+pointwise and aggregation/dense kernels are pruned jointly with a
+global magnitude threshold. The resulting ``QAT'' and
+``QAT~$+$~pruning'' checkpoints are compared in
+Section~\ref{sec:results}.
+
+\begin{algorithm}[t]
+\caption{Weight-only QAT with optional magnitude pruning for a
+neural receiver.}
+\label{alg:qat_prune}
+\begin{algorithmic}[1]
+\REQUIRE Pretrained \texttt{FP32} weights $\mathbf{W}$;
+         target grid $\mathcal{G}$ (INT8/INT4/FP8/FP4);
+         batch size $N_B$ (OFDM slots / step);
+         QAT budget $N_{\mathrm{QAT}}$; optional sparsity
+         $\rho\in[0,1)$ and prune budget $N_{\mathrm{P}}$
+\ENSURE Quantized (and optionally sparse) weights
+        $\mathbf{W}^{\star}$
+\STATE Insert per-channel abs-max fake-quantizers
+       \eqref{eq:fake_quant} on all CNN/MLP kernels
+\FOR{$t = 1$ \TO $N_{\mathrm{QAT}}$}
+  \STATE Sample $N_B$ OFDM slots
+         $(\mathbf{y},\mathbf{h},\mathbf{b})\!\sim\!\mathcal{D}$
+         (random users, UMi channels, $E_b/N_0$)
+  \STATE $\widehat{\mathbf{W}} \leftarrow
+         F_{\mathcal{G}}(\mathbf{W})$
+         \COMMENT{forward fake-quant}
+  \STATE $\hat{L},\hat{\mathbf{h}} \leftarrow
+         f(\mathbf{y};\,\widehat{\mathbf{W}})$
+  \STATE Compute $\mathcal{L}(\mathbf{b},\hat{L},\hat{\mathbf{h}})$
+         via \eqref{eq:total_loss}; update $\mathbf{W}$ with
+         Adam + \gls{STE}
+\ENDFOR
+\IF{$\rho > 0$}
+  \STATE Build global magnitude mask $\mathbf{M}$ at
+         sparsity $\rho$ on pointwise/dense kernels
+         \eqref{eq:prune_mask}; set
+         $\mathbf{W}\leftarrow\mathbf{M}\odot\mathbf{W}$
+  \FOR{$t = 1$ \TO $N_{\mathrm{P}}$}
+    \STATE Sample $N_B$ slots; fake-quant forward as above
+    \STATE Adam + \gls{STE} update; project
+           $\mathbf{W}\leftarrow\mathbf{M}\odot\mathbf{W}$
+  \ENDFOR
+\ENDIF
+\STATE \textbf{return}
+       $\mathbf{W}^{\star}\leftarrow F_{\mathcal{G}}(\mathbf{W})$
+\end{algorithmic}
+\end{algorithm}
+)

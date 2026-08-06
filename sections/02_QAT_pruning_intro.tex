@@ -1,0 +1,129 @@
+\section{Quantization-Aware Training and Pruning}
+\label{sec:qat_pruning}
+
+Deploying a neural receiver under base-station memory and latency
+constraints motivates joint reduction of weight precision and sparsity.
+This section formalizes the two compression mechanisms used in our
+experiments: weight-only \gls{QAT} with integer and floating-point
+microformats, and unstructured magnitude pruning. Activations, biases,
+and arithmetic in the forward graph remain in full precision
+(\texttt{FP32}); only convolutional and dense kernels are quantized
+and, optionally, sparsified.
+
+\subsection{Weight-Only Fake Quantization}
+\label{sec:fake_quant}
+\gls{QAT} inserts a fake-quantization operator in the forward pass so
+that the network experiences the same rounding and clipping noise that
+low-precision inference will induce, while gradients update a
+full-precision master copy of the weights
+\cite{quantization_whitepaper,wu2020integer,jacob2018quantization}.
+Let $\mathbf{W}$ denote a kernel (convolutional or dense) and let
+$\mathcal{G}\subset\mathbb{R}$ be a finite quantization grid with
+maximum magnitude $g_{\max}=\max_{g\in\mathcal{G}}|g|$. We use
+\emph{per-channel abs-max} scaling along the output-channel axis:
+for each output channel $c$,
+\begin{equation}
+\label{eq:absmax_scale}
+  s_c = \frac{\max_{i}\,|W_{i,c}|}{g_{\max}},
+\end{equation}
+and the fake-quantized weight is
+\begin{equation}
+\label{eq:fake_quant}
+  \widehat{W}_{i,c}
+  = s_c\cdot\mathrm{round}_{\mathcal{G}}\!\bigl(W_{i,c}/s_c\bigr),
+\end{equation}
+where $\mathrm{round}_{\mathcal{G}}(\cdot)$ maps to the nearest
+element of $\mathcal{G}$. Scales $s_c$ are recomputed from the live
+weights on every forward pass (no frozen calibration set).
+
+For integer \gls{QAT} with bit-width $b\in\{4,8\}$ we use a symmetric
+narrow-range grid
+\begin{equation}
+\label{eq:int_grid}
+  \mathcal{G}_{\mathrm{INT},b}
+  = \bigl\{-(2^{b-1}-1),\ldots,2^{b-1}-1\bigr\},
+\end{equation}
+so $g_{\max}=2^{b-1}-1$ and \eqref{eq:fake_quant} reduces to uniform
+symmetric quantization with $2^{b}-1$ reconstruction levels
+\cite{krishnamoorthi2018quantizing,wu2020integer}.
+
+Because rounding is non-differentiable, the backward pass employs the
+\gls{STE} \cite{bengio2013estimating,understanding_STE}, which
+approximates
+\begin{equation}
+\label{eq:ste}
+  \frac{\partial\widehat{W}}{\partial W} \approx \mathbf{I}.
+\end{equation}
+Weight updates are therefore applied to the full-precision master
+$\mathbf{W}$, while every subsequent forward pass re-quantizes through
+\eqref{eq:fake_quant}. The resulting training objective is the task
+loss evaluated under simulated quantization,
+\begin{equation}
+\label{eq:qat_objective}
+  \min_{\mathbf{W}}\;
+  \mathbb{E}_{(\mathbf{y},\mathbf{s})\sim\mathcal{D}}
+  \Bigl[
+    \mathcal{L}\bigl(\mathbf{y},\,
+    f(\mathbf{s};\,\widehat{\mathbf{W}})\bigr)
+  \Bigr],
+\end{equation}
+where $f(\cdot;\widehat{\mathbf{W}})$ is the neural receiver with
+fake-quantized kernels and $\mathcal{D}$ is the training distribution
+(detailed in Section~\ref{sec:nrx_qat}).
+
+\subsection{Floating-Point Microformats: FP8 and FP4}
+\label{sec:fp_micro}
+Low-bit floating-point formats allocate a non-uniform grid that
+preserves dynamic range near zero---a useful match to the typically
+heavy-tailed histograms of trained convolutional kernels
+\cite{micikevicius2022fp8,rouhani2023microscaling}. We consider two
+Open Compute Project (OCP) microformats natively supported by recent
+inference hardware.
+
+\textbf{FP8~(E4M3).}
+An E4M3 value comprises one sign bit, four exponent bits, and three
+mantissa bits. Following the OCP specification
+\cite{micikevicius2022fp8,rouhani2023microscaling}, the finite grid
+has maximum magnitude $g_{\max}=448$. Relative to INT8, E4M3 provides
+a comparable bit budget with a non-uniform spacing that better covers
+large dynamic ranges.
+
+\textbf{FP4~(E2M1).}
+An E2M1 value comprises one sign bit, two exponent bits, and one
+mantissa bit, yielding the fifteen finite levels
+\begin{equation}
+\label{eq:fp4_grid}
+  \mathcal{G}_{\mathrm{E2M1}}
+  = \{0,\pm0.5,\pm1,\pm1.5,\pm2,\pm3,\pm4,\pm6\},
+\end{equation}
+with $g_{\max}=6$. At identical $8\times$ weight compression, E2M1
+therefore offers a coarser but non-uniform alternative to INT4; both
+formats use the same abs-max scaling \eqref{eq:absmax_scale} and STE
+\eqref{eq:ste} during \gls{QAT}.
+
+\subsection{Unstructured Magnitude Pruning}
+\label{sec:pruning}
+In addition to reducing bit-width, we sparsify kernels by unstructured
+magnitude pruning \cite{song_han_1,kuzmin2023pruning}. After a
+converged \gls{QAT} checkpoint is obtained, let
+$\mathcal{T}$ collect the eligible weight tensors
+(separable-convolution \emph{pointwise} kernels and aggregation/dense
+kernels; depthwise kernels and the LLR readout are left dense). A
+single global threshold $\tau$ is chosen so that a target fraction
+$\rho$ of coefficients in $\mathcal{T}$ satisfy $|w|<\tau$. With a
+binary keep-mask $\mathbf{M}$ of matching shape,
+\begin{equation}
+\label{eq:prune_mask}
+  W^{\mathrm{pr}}_{i}
+  = M_{i}\,W_{i},
+  \qquad
+  M_{i}=\mathds{1}_{\{|W_{i}|\ge\tau\}},
+\end{equation}
+we obtain an unstructured sparsity pattern with unchanged tensor
+shapes. In our experiments $\rho=50\%$ (global magnitude pruning).
+The pruned model is then fine-tuned under the same fake-quantization
+operators \eqref{eq:fake_quant}, with hard projection onto
+$\mathbf{M}$ after each optimizer step so that pruned coordinates
+remain zero. This yields a joint low-precision and sparse receiver
+without altering the computational graph topology.
+)

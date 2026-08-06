@@ -1,0 +1,19 @@
+\section{Introduction}
+\label{sec:intro}
+Deep Learning has recently delivered strong gains at the \gls{PHY}, where fully-convolutional neural receivers such as DeepRx replace channel estimation, equalization, and demapping to improve error-rate performance under standardized channels and mobility \cite{deeprx}. End-to-end designs further demonstrate that learned receivers can reduce or even eliminate pilot overhead while maintaining reliability, highlighting the practical promise of \gls{AI}-native \gls{PHY} stacks for beyond-5G and 6G systems \cite{e2e_faa}. However, deployment in edge-constrained radio hardware remains limited by compute, memory, and latency budgets, making precision reduction via quantization central to practical neural receiver inference. In this context, \gls{QAT} adapts the model during training to low-precision arithmetic \cite{quantization_whitepaper, wu2020integer,krishnamoorthi2018quantizing,jacob2017quantizationtrainingneuralnetworks, lsq+,lectures_songhan}.\par
+
+{\gls{PTQ}} avoids retraining and compresses models by up to $8\times$, but can degrade at aggressive bit-widths and under distribution shifts characteristic of high‑Doppler channels. In prior work, a CNN‑based neural receiver with symmetric uniform {\gls{PTQ}} (per‑tensor and per‑channel) achieved near‑\texttt{float32} BLER at 8‑bit and competitive results at 4‑bit, establishing a strong baseline for efficient {\gls{PHY}} inference and motivating robustness analysis at low precision \cite{saketh_asilomar25,dfq,kuzmin2023pruning,simquant,yellapragada2025datafree}.
+In this paper, we examine whether {\gls{QAT}} closes the remaining gap by training with simulated quantizers, thereby improving the dependability of ultra‑low‑bit neural receivers across mobility and channel conditions.
+
+\gls{QAT} integrates simulated quantizers into the training graph so the network learns to compensate for rounding and range effects, and is widely shown to preserve accuracy at 8-bit and enable viable 4-bit operation across diverse architectures and hardware back ends. Concretely, {\gls{QAT}} co-designs scale and rounding behavior with task loss, retaining integer-arithmetic-only inference paths at deployment time to meet edge latency and energy targets without sacrificing model quality. These properties make \gls{QAT} a natural fit for neural receivers operating under time and frequency-selective fading, where amplitude spikes and distribution shifts can otherwise erode \gls{PTQ} accuracy at ultra-low bit-widths. \par
+
+This paper advances efficient neural receivers beyond \gls{PTQ} by developing a \gls{QAT} pipeline for convolutional \gls{PHY} receivers. The principles discussed in this paper should apply to any convolutional-ResNet architectures. We evaluate on 3GPP CDL\mbox{-}B/D channels across low, medium, and high UE speeds using Sionna, a hardware-accelerated differentiable link-level setup \cite{sionna}. 
+
+\paragraph*{Main contributions}
+\begin{itemize}
+
+  \item A principled \gls{QAT}  formulation with learnable clipping and per-channel scales, demonstrating that 4-bit \gls{QAT}  preserves deployment efficiency while maintaining accuracy.
+
+  \item A comprehensive link‑level evaluation contrasting \gls{PTQ} and \gls{QAT} on 3GPP TR 38.901 CDL‑B/D channels across \gls{UE} speeds, with results reported at \gls{BLER} targets of 10\% and 1\%.
+
+\end{itemize}

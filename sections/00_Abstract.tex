@@ -1,0 +1,15 @@
+\begin{abstract}
+As wireless communication systems advance toward \gls{6G} \gls{RAN}, \gls{DL}-based neural receivers are emerging as transformative solutions for \gls{PHY} processing, delivering superior \gls{BLER} performance compared to traditional model-based approaches. Practical deployment on resource-constrained hardware, however, requires efficient quantization to reduce latency, energy, and memory without sacrificing reliability. In this paper, we extend \gls{PTQ} by focusing on \gls{QAT}, which incorporates low-precision simulation during training for robustness at ultra-low bitwidths. In particular, we develop a \gls{QAT} methodology for a neural receiver architecture and benchmark it against a \gls{PTQ} approach across diverse 3GPP \gls{CDL} channel profiles under both \gls{LoS} and \gls{NLoS} conditions, with user velocities up to 40 m/s. Results show that 4-bit and 8-bit \gls{QAT} models achieve \glspl{BLER} comparable to \texttt{FP32} models at a 10\% target \gls{BLER}. Moreover, \gls{QAT} models succeed in \gls{NLoS} scenarios where \gls{PTQ} models fail to reach the 10\% \gls{BLER} target, while also yielding an $8\times$ compression. These results with respect to full-precision demonstrate that \gls{QAT} is a key enabler of low-complexity and latency-constrained inference at the \gls{PHY} layer, facilitating real-time processing in \gls{6G} edge devices.
+\end{abstract}
+
+%
+\begin{keywords}
+Deep Learning, Neural Receivers, quantization aware training, post training quantization, resource efficient machine learning
+\end{keywords}
+
+%
+\begin{comment}
+    for IEEE submission portal : 
+As wireless communication systems advance toward Sixth Generation (6G) Radio Access Networks (RAN), Deep Learning (DL)-based neural receivers are emerging as transformative solutions for Physical Layer (PHY) processing, delivering superior Block Error Rate (BLER) performance compared to traditional model-based approaches. Practical deployment on resource-constrained hardware, however, requires efficient quantization to reduce latency, energy, and memory without sacrificing reliability. We extend Post-Training Quantization (PTQ) baselines with Quantization-Aware Training (QAT), which incorporates low-precision simulation during training for robustness at ultra-low bitwidths. Our study applies QAT/PTQ to a neural receiver architecture and evaluates across 3GPP Clustered Delay Line (CDL)-B/D channels in LoS and NLoS environments at user velocities up to 40 m/s. Results show that 4-bit and 8-bit QAT models achieve BLERs similar to that of FP32 models at 10% target BLER. QAT models are also shown to outperform PTQ models by up to 3 dB, and yield 8× compression. These results demonstrate that QAT is a key enabler of low-complexity and latency-constrained inference at the PHY layer, facilitating real-time processing in 6G edge devices
+\end{comment}
+%

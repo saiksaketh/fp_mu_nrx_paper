@@ -1,0 +1,67 @@
+% Template for ICASSP-2026 paper; to be used with:
+%          spconf.sty  - ICASSP/ICIP LaTeX style file, and
+%          IEEEbib.bst - IEEE bibliography style file.
+% --------------------------------------------------------------------------
+\documentclass{article}
+\usepackage{spconf,amsmath,graphicx}%, hyperref}
+%% Import Acronym
+\usepackage[acronym, nonumberlist]{glossaries}
+\input{acronym}
+\usepackage{amsmath,amssymb}
+\usepackage{subcaption}
+\usepackage{dsfont,comment,booktabs}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+% Example definitions.
+% --------------------
+\def\x{{\mathbf x}}
+\def\L{{\cal L}}
+
+% Title.
+% ------
+\title{Efficient Quantization-Aware Neural Receivers: Beyond Post-Training Quantization}
+%
+% Single address.
+% ---------------
+%\name{Author(s) Name(s)\thanks{Thanks to XYZ agency for funding.}}
+%\address{Author Affiliation(s)}
+% Two addresses
+\name{
+  SaiKrishna Saketh Yellapragada$^{\star}$,
+     Esa Ollila$^{\star}$,
+  Mário Costa$^{\dagger}$
+\thanks{The  work of  first author has been supported in parts by Research Council of Finland (grant no:359848) and European Union's 6GARROW project (No 101192194).}
+}
+\address{
+  $^{\star}$Aalto University, Espoo, Finland \\
+  $^{\dagger}$Nokia, Amadora, Portugal \\
+  \texttt{\{saikrishna.yellapragada, esa.ollila\}@aalto.fi}, 
+  \texttt{mario.costa@nokia.com}
+}
+
+\begin{document}
+%\ninept
+%
+\maketitle
+%
+
+\input{sections/00_Abstract}
+
+% Author drafts abstract/intro separately; leave 01 commented.
+%\input{sections/01_Introduction.tex}
+\input{sections/02_QAT_pruning_intro}
+\input{sections/03_QATofNrx}
+\input{sections/04_Experimental_Results}
+%\input{sections/05_Discussion_Conclusion}
+\input{sections/06_Conclusion}
+
+%%%%% No Explicit citations %%%%%%%
+\nocite{industryview6g,heresidual,kingma2014adam,4bitquant}
+\newpage
+\bibliographystyle{IEEEbib}
+\bibliography{references}
+%\input{main.bbl}
+
+\end{document}

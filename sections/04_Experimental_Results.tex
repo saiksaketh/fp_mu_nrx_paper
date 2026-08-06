@@ -1,0 +1,121 @@
+% Results draft from campaign_su_mu_20260802-134343/mu_tdllow
+% (qat_only + qat_pruned). Numbers: log-linear interpolation of BLER
+% curves in qat_compare_bler.npz at targets 10% and 1%.
+%
+% Figure assets (from make_paper_figures.py --campaign):
+%   campaign_su_mu_20260802-134343/figures/mu_tdllow/bler_qat_only.pdf
+%   campaign_su_mu_20260802-134343/figures/mu_tdllow/bler_qat_pruned.pdf
+
+\section{Experimental Results and Discussion}
+\label{sec:results}
+
+\begin{figure*}[t]
+    \centering
+    \begin{subfigure}[t]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{campaign_su_mu_20260802-134343/figures/mu_tdllow/bler_qat_only.pdf}
+        \caption{Weight-only QAT (MU-MIMO, DoubleTDL-low, $U{=}2$, 16-QAM)}
+        \label{fig:bler_qat}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{campaign_su_mu_20260802-134343/figures/mu_tdllow/bler_qat_pruned.pdf}
+        \caption{QAT + 50\% magnitude pruning (same MU-MIMO setup)}
+        \label{fig:bler_prune}
+    \end{subfigure}
+    \caption{BLER vs.\ $E_b/N_0$ for the neural receiver at 56\,km/h.
+    Both panels share the same axes and baseline curves (FP32, LS--LMMSE,
+    LMMSE--K-Best, perfect-CSI K-Best). Panel~(a) shows weight-only QAT in
+    FP8~(E4M3), INT8, FP4~(E2M1), and INT4; panel~(b) shows the same formats
+    after 50\% global magnitude pruning of pointwise and dense kernels.}
+    \label{fig:BLER}
+\end{figure*}
+
+In this section, we evaluate the proposed neural receiver under weight-only
+quantization-aware training (QAT) at FP8~(E4M3), INT8, FP4~(E2M1), and INT4,
+and under joint QAT with 50\% magnitude pruning. Evaluation uses a
+3GPP-compliant two-user PUSCH setup on the DoubleTDL-low channel at
+56\,km/h (Table~\ref{tab:sim_params}). We report block error rate (BLER)
+versus rate-adjusted $E_b/N_0$, and center the discussion on the SNR
+required to reach $10\%$ and $1\%$ BLER. All QAT and pruned receivers are
+compared against the full-precision (\texttt{FP32}) neural receiver,
+LS channel estimation with LMMSE equalization, LMMSE channel estimation
+with K-Best detection, and an ideal K-Best receiver with perfect CSI.
+
+{\bf Quantization-aware training.}
+Figure~\ref{fig:bler_qat} shows BLER for the unpruned QAT receivers.
+Eight-bit quantization is effectively lossless: FP8~(E4M3) and INT8 reach
+$10\%$ BLER at $2.29$\,dB and $2.27$\,dB, respectively, matching the FP32
+operating point of $2.30$\,dB to within $0.03$\,dB; at $1\%$ BLER the same
+formats require $3.52$\,dB and $3.48$\,dB versus $3.58$\,dB for FP32.
+Relative to the practical LS--LMMSE baseline ($4.14$\,dB / $5.43$\,dB at
+$10\%$ / $1\%$ BLER), both 8-bit QAT receivers retain an SNR advantage of
+approximately $1.85$--$1.95$\,dB and remain within $\sim$0.2\,dB of the
+stronger LMMSE--K-Best detector.
+
+At 4-bit precision the choice of format dominates. FP4~(E2M1) attains
+$10\%$ BLER at $3.62$\,dB and $1\%$ BLER at $4.93$\,dB---an SNR gap of
+$1.32$\,dB and $1.36$\,dB over FP32---while still outperforming LS--LMMSE
+by $0.52$\,dB and $0.50$\,dB at the two targets. In contrast, INT4
+requires $5.46$\,dB and $7.36$\,dB ($+3.16$\,dB / $+3.78$\,dB versus
+FP32) and falls $1.32$--$1.93$\,dB \emph{behind} LS--LMMSE. Relative to
+FP4, INT4 incurs an additional $1.84$\,dB at $10\%$ BLER and $2.43$\,dB at
+$1\%$ BLER at identical $8\times$ weight compression. The non-uniform
+E2M1 grid therefore roughly halves the 4-bit penalty of a uniform integer
+grid and preserves the neural receiver's gain over conventional LS-based
+detection.
+
+{\bf QAT with magnitude pruning.}
+Figure~\ref{fig:bler_prune} repeats the comparison after 50\% global
+magnitude pruning of pointwise and dense kernels (194{,}176 of 388{,}352
+pruned weights removed; depthwise and readout layers left dense). For
+8-bit formats the pruning overhead is small: FP8 and INT8 reach $10\%$
+BLER at $2.37$\,dB and $2.36$\,dB ($+0.07$\,dB / $+0.06$\,dB versus FP32;
+$+0.08$\,dB / $+0.09$\,dB versus their unpruned QAT counterparts) and
+$1\%$ BLER at $3.59$\,dB and $3.61$\,dB. Both pruned 8-bit receivers still
+outperform LS--LMMSE by approximately $1.77$--$1.83$\,dB at $10\%$ BLER
+and remain competitive with LMMSE--K-Best.
+
+At 4 bits the formats again diverge under sparsity. Pruned FP4~(E2M1)
+reaches $10\%$ and $1\%$ BLER at $3.55$\,dB and $4.83$\,dB---within
+$0.1$\,dB of unpruned FP4 and still $0.59$--$0.60$\,dB ahead of
+LS--LMMSE---indicating that 50\% sparsity is essentially free once the
+E2M1 grid has been adapted by QAT. Pruned INT4, however, degrades
+sharply to $6.41$\,dB and $8.65$\,dB at the two targets
+($+0.95$\,dB / $+1.29$\,dB over unpruned INT4; $+4.11$\,dB / $+5.08$\,dB
+over FP32) and trails LS--LMMSE by more than $2$\,dB. Combining aggressive
+integer quantization with pruning is therefore unreliable, whereas FP4
+QAT absorbs the same sparsity with negligible radio impact.
+
+{\bf FP8/INT8 QAT vs.\ FP32.}
+The near-identical $10\%$ and $1\%$ BLER operating points of FP8~(E4M3),
+INT8, and FP32---gaps below $0.1$\,dB with or without 50\% pruning---show
+that 8-bit weight-only QAT is sufficient for this MU-MIMO receiver. At
+this precision the STE fake-quantization and per-channel abs-max scaling
+introduce no material distribution shift relative to full precision, so
+$4\times$ weight compression (and an additional $2\times$ from 50\%
+sparsity for the pruned variants) comes at virtually no SNR cost.
+
+{\bf FP4 QAT vs.\ INT4 QAT.}
+A clear SNR gap separates FP4~(E2M1) from INT4 at both BLER targets:
+$\sim$1.8\,dB without pruning and $\sim$2.9\,dB with 50\% pruning at
+$10\%$ BLER. QAT adapts weights to the non-uniform E2M1 levels, which
+allocate resolution near zero and match the heavy-tailed kernel
+histograms of the convolutional graph neural receiver; uniform INT4
+quantization cannot recover the same dynamic range at four bits. The gap
+widens under pruning because magnitude sparsification removes small
+weights that INT4 already represents poorly, whereas FP4 retains usable
+resolution for the surviving coefficients.
+
+{\bf Pruning under QAT.}
+Across formats, 50\% magnitude pruning is nearly transparent at 8 bits
+($\lesssim$0.12\,dB at $1\%$ BLER) and even slightly beneficial for FP4
+within Monte Carlo variation, but catastrophic for INT4. This asymmetry
+underscores that sparsity and ultra-low-bit quantization must be
+co-designed: once the weight grid is already information-starved, as with
+INT4, further zeroing of coefficients compounds inter-layer error and
+erodes the neural receiver's advantage over classical detection. FP4
+QAT, by contrast, provides enough representational headroom for joint
+$8\times$ compression and 50\% sparsity while remaining above the
+LS--LMMSE baseline at both $10\%$ and $1\%$ BLER.
+)

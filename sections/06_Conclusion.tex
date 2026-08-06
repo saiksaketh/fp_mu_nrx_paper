@@ -1,0 +1,6 @@
+\section{Conclusion and Future Work}
+\label{conclusion}
+The 4-bit \gls{QAT} meets 10\% \gls{BLER} targets in challenging \gls{NLoS} scenarios where 4-bit \gls{PTQ} fails, maintaining $\leq$0.8~dB \gls{SNR} gap to \texttt{FP32}. We intentionally kept channel and network configurations identical to \gls{PTQ} to enforce a controlled comparison and attribute gains specifically to the training methodology. Recent work shows that pruning and quantization trade off accuracy differently \cite{harma2025effective}, having established a \gls{QAT} baseline here, incorporating further compression methods via joint sparsity remains future work. Furthermore, our \gls{QAT} framework can be extended to low-bit activation quantization and mixed-precision weight–activation designs, which we also leave for future work.
+
+The $8\times$ weight compression enables hardware-software codesign: on-chip SRAM and bandwidth can target 4-bit storage while maintaining near-\texttt{FP32} performance. This enables lightweight inference on resource-constrained edge devices, reducing memory and latency for \gls{6G} deployment. The strong \gls{LoS} performance of 4-bit \gls{QAT} receivers also positions them as viable candidates for integrated sensing and communication as well as site-specific deployments.
+\vspace{-3mm}
