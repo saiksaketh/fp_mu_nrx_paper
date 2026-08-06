@@ -38,10 +38,15 @@ $2.14$\,GHz, $30$\,kHz subcarrier spacing, and MCS index~14
 (16-\gls{QAM}, $R\approx0.48$) from Table~1 of \cite{3gpp38214}.
 \gls{DMRS} uses configuration type~1, mapping type~A, and one
 additional DMRS position. Training sees randomized 3GPP \gls{UMi}
-channels with $1$--$2$ active users and velocities up to
-$56$\,km/h; evaluation uses the dual-user DoubleTDL-low scenario of
-\cite{scamnrx} at fixed $56$\,km/h with $132$ \glspl{PRB}. Key
-parameters are collected in Table~\ref{tab:sim_params}.
+channels with $1$--$2$ active users and UE speeds drawn uniformly from
+$[0,56]$\,m/s. Evaluation uses the dual-user DoubleTDL-low scenario of
+\cite{scamnrx} on a $132$-\gls{PRB} grid: the two users experience
+distinct 3GPP TR~38.901 \gls{TDL} profiles under low antenna
+correlation---UE~1 on TDL-B100/400 ($100$\,ns delay spread,
+$400$\,Hz Doppler, $\approx\!56$\,m/s at $2.14$\,GHz) and UE~2 on
+TDL-C300/100 ($300$\,ns, $100$\,Hz, $\approx\!14$\,m/s)---and the
+receiver observes their superposition plus AWGN. Key parameters are
+collected in Table~\ref{tab:sim_params}.
 
 \begin{table}[t]
 \centering
@@ -59,8 +64,10 @@ OFDM symbols / slot & 14 \\
 PRBs (train / eval) & 4 / 132 \\
 MCS (Table~1 \cite{3gpp38214}) & index 14 (16-QAM, $R\approx0.48$) \\
 DMRS & type~1, mapping~A, +1 position \\
-Channel (train) & 3GPP UMi, $0$--$56$\,km/h \\
-Channel (eval) & DoubleTDL-low \cite{scamnrx}, $56$\,km/h \\
+Channel (train) & 3GPP UMi, speeds $[0,56]$\,m/s \\
+Channel (eval) & DoubleTDL-low \cite{scamnrx}: \\
+ & UE1 TDL-B100/400 ($100$\,ns, $400$\,Hz) \\
+ & UE2 TDL-C300/100 ($300$\,ns, $100$\,Hz) \\
 NRX depth $N_{\mathrm{it}}$ / state width $d_s$ & 8 / 56 \\
 \bottomrule
 \end{tabular}
@@ -119,7 +126,7 @@ $N_{\mathrm{it}}$ unrolled receiver iterations, and $\lambda$ decays
 from $0.02$ to $0.01$ across two schedule phases. Each SGD step
 draws a mini-batch of $N_B{=}128$ independently simulated OFDM
 slots on-the-fly in Sionna \cite{sionna}, with random active-user
-counts, velocities in $[0,56]$\,km/h, and rate-adjusted $E_b/N_0$
+counts, velocities in $[0,56]$\,m/s, and rate-adjusted $E_b/N_0$
 in a phase-dependent window of roughly $0$--$15$\,dB. The
 \texttt{FP32} baseline is trained with Adam; quantized models always
 warm-start from that checkpoint so that \gls{QAT} adapts an already

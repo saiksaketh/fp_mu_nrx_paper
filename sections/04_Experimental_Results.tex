@@ -23,7 +23,8 @@
         \caption{QAT + 50\% magnitude pruning (same MU-MIMO setup)}
         \label{fig:bler_prune}
     \end{subfigure}
-    \caption{BLER vs.\ $E_b/N_0$ for the neural receiver at 56\,km/h.
+    \caption{BLER vs.\ $E_b/N_0$ for the neural receiver on DoubleTDL-low
+    (UE1: TDL-B100/400, UE2: TDL-C300/100).
     Both panels share the same axes and baseline curves (FP32, LS--LMMSE,
     LMMSE--K-Best, perfect-CSI K-Best). Panel~(a) shows weight-only QAT in
     FP8~(E4M3), INT8, FP4~(E2M1), and INT4; panel~(b) shows the same formats
@@ -34,8 +35,10 @@
 In this section, we evaluate the proposed neural receiver under weight-only
 quantization-aware training (QAT) at FP8~(E4M3), INT8, FP4~(E2M1), and INT4,
 and under joint QAT with 50\% magnitude pruning. Evaluation uses a
-3GPP-compliant two-user PUSCH setup on the DoubleTDL-low channel at
-56\,km/h (Table~\ref{tab:sim_params}). We report block error rate (BLER)
+3GPP-compliant two-user PUSCH setup on DoubleTDL-low
+(Table~\ref{tab:sim_params}): UE~1 follows TDL-B100/400
+($400$\,Hz Doppler) and UE~2 follows TDL-C300/100 ($100$\,Hz).
+We report block error rate (BLER)
 versus rate-adjusted $E_b/N_0$, and center the discussion on the SNR
 required to reach $10\%$ and $1\%$ BLER. All QAT and pruned receivers are
 compared against the full-precision (\texttt{FP32}) neural receiver,

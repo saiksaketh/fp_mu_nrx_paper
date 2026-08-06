@@ -52,24 +52,27 @@ Because rounding is non-differentiable, the backward pass employs the
 approximates
 \begin{equation}
 \label{eq:ste}
-  \frac{\partial\widehat{W}}{\partial W} \approx \mathbf{I}.
+  \frac{\partial\widehat{W}}{\partial W} \approx \mathbf{I}
 \end{equation}
-Weight updates are therefore applied to the full-precision master
-$\mathbf{W}$, while every subsequent forward pass re-quantizes through
-\eqref{eq:fake_quant}. The resulting training objective is the task
-loss evaluated under simulated quantization,
+(for integer grids, gradients outside the abs-max clip range are
+additionally zeroed). Weight updates are therefore applied to the
+full-precision master $\mathbf{W}$, while every subsequent forward
+pass re-quantizes through \eqref{eq:fake_quant}. The resulting
+training objective is the task loss evaluated under simulated
+quantization,
 \begin{equation}
 \label{eq:qat_objective}
   \min_{\mathbf{W}}\;
-  \mathbb{E}_{(\mathbf{y},\mathbf{s})\sim\mathcal{D}}
+  \mathbb{E}_{(\mathbf{y},\mathbf{b})\sim\mathcal{D}}
   \Bigl[
-    \mathcal{L}\bigl(\mathbf{y},\,
-    f(\mathbf{s};\,\widehat{\mathbf{W}})\bigr)
+    \mathcal{L}\bigl(\mathbf{b},\,
+    f(\mathbf{y};\,\widehat{\mathbf{W}})\bigr)
   \Bigr],
 \end{equation}
-where $f(\cdot;\widehat{\mathbf{W}})$ is the neural receiver with
-fake-quantized kernels and $\mathcal{D}$ is the training distribution
-(detailed in Section~\ref{sec:nrx_qat}).
+where $\mathbf{y}$ is the received post-\gls{FFT} slot, $\mathbf{b}$
+are the coded bits, $f(\cdot;\widehat{\mathbf{W}})$ is the neural
+receiver with fake-quantized kernels, and $\mathcal{D}$ is the
+training distribution (detailed in Section~\ref{sec:nrx_qat}).
 
 \subsection{Floating-Point Microformats: FP8 and FP4}
 \label{sec:fp_micro}
