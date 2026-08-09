@@ -1,16 +1,17 @@
-\section{Quantization-Aware Training and Pruning}
+\section{Quantization-Aware Training, Activations, and Pruning}
 \label{sec:qat_pruning}
 
 Deploying a neural receiver under base-station memory and latency
-constraints motivates joint reduction of weight precision and sparsity.
-This section formalizes the two compression mechanisms used in our
-experiments: weight-only \gls{QAT} with integer and floating-point
-microformats, and unstructured magnitude pruning. Activations, biases,
-and arithmetic in the forward graph remain in full precision
-(\texttt{FP32}); only convolutional and dense kernels are quantized
-and, optionally, sparsified.
+constraints motivates joint reduction of weight precision, activation
+precision, and---optionally---sparsity. This section formalizes the
+three compression mechanisms used in our experiments: weight
+\gls{QAT} with integer and floating-point microformats, INT8
+asymmetric fake-quantization of post-\gls{ReLU} activations, and
+unstructured magnitude pruning. Biases remain in full precision
+(\texttt{FP32}); convolutional and dense kernels are quantized and,
+optionally, sparsified.
 
-\subsection{Weight-Only Fake Quantization}
+\subsection{Weight Fake Quantization}
 \label{sec:fake_quant}
 \gls{QAT} inserts a fake-quantization operator in the forward pass so
 that the network experiences the same rounding and clipping noise that
@@ -99,10 +100,35 @@ mantissa bit, yielding the fifteen finite levels
   \mathcal{G}_{\mathrm{E2M1}}
   = \{0,\pm0.5,\pm1,\pm1.5,\pm2,\pm3,\pm4,\pm6\},
 \end{equation}
-with $g_{\max}=6$. At identical $8\times$ weight compression, E2M1
-therefore offers a coarser but non-uniform alternative to INT4; both
-formats use the same abs-max scaling \eqref{eq:absmax_scale} and STE
-\eqref{eq:ste} during \gls{QAT}.
+with $g_{\max}=6$. At identical nominal $8\times$ weight compression,
+E2M1 therefore offers a coarser but non-uniform alternative to INT4;
+both formats use the same abs-max scaling \eqref{eq:absmax_scale} and
+STE \eqref{eq:ste} during \gls{QAT}.
+
+\subsection{INT8 Asymmetric Activation Quantization}
+\label{sec:act_quant}
+Weight quantization alone leaves the dominant memory traffic---layer
+activations---untouched. After each \gls{ReLU}, the activation tensor
+is nonnegative, so we apply \emph{asymmetric} uniform INT8
+fake-quantization over the per-tensor range
+$[0,\max(\mathbf{a})]$:
+\begin{equation}
+\label{eq:act_fq}
+  \widehat{\mathbf{a}}
+  = Q_{\mathrm{INT8}}^{\mathrm{asym}}(\mathbf{a}),
+  \qquad
+  \mathbf{a}=\mathrm{ReLU}(\cdot).
+\end{equation}
+Linear layers (residual state, aggregation outputs, and LLR /
+channel-estimate heads) and the network input remain in
+\texttt{FP32}; only post-\gls{ReLU} feature maps are quantized. This
+matches integer inference paths that keep unsigned activations after
+\gls{ReLU} while preserving full-precision residuals
+\cite{jacob2018quantization,wu2020integer}. During \gls{QAT},
+\eqref{eq:act_fq} is composed with weight fake-quantization
+\eqref{eq:fake_quant}, so the network jointly adapts to weight and
+activation noise. We denote such models by W$b$A8 (weight bit-width
+$b$, INT8 activations).
 
 \subsection{Unstructured Magnitude Pruning}
 \label{sec:pruning}

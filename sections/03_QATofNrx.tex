@@ -2,14 +2,14 @@
 \label{sec:nrx_qat}
 
 We compress a 5G~NR-compliant multi-user uplink neural receiver using
-the weight-only \gls{QAT} and magnitude-pruning operators of
-Section~\ref{sec:qat_pruning}. The underlying detector is a
-convolutional graph neural network (CGNN) designed for flexible
-MU-\gls{MIMO} \gls{PUSCH} reception \cite{scamnrx}; related real-time
-deployment studies motivate tight memory budgets
-\cite{wiesmayr2024design}. Our focus is not on redesigning that
-architecture, but on making it amenable to low-bit integer and
-floating-point weights---with and without 50\% sparsity---while
+the weight \gls{QAT}, INT8 asymmetric activation quantization, and
+magnitude-pruning operators of Section~\ref{sec:qat_pruning}. The
+underlying detector is a convolutional graph neural network (CGNN)
+designed for flexible MU-\gls{MIMO} \gls{PUSCH} reception
+\cite{scamnrx}; related deployment studies motivate tight memory and
+compute budgets \cite{wiesmayr2024design}. Our focus is not
+on redesigning that architecture, but on making it amenable to low-bit
+weights and activations---with and without 50\% sparsity---while
 preserving link-level \gls{BLER}.
 
 \subsection{Uplink Setup}
@@ -92,11 +92,13 @@ $128$.
 For \gls{QAT}, every convolutional and dense kernel---depthwise,
 pointwise, aggregation, and readout---is passed through the
 fake-quantizer \eqref{eq:fake_quant} in INT8, INT4, FP8~(E4M3), or
-FP4~(E2M1). Biases and activations stay in \texttt{FP32}. This
-weight-only choice shrinks the dominant memory footprint while
-leaving the arithmetic path unchanged, matching the deployment
-setting targeted by low-precision tensor-core formats
-\cite{micikevicius2022fp8}.
+FP4~(E2M1). When activation \gls{QAT} is enabled, every post-\gls{ReLU}
+feature map is additionally passed through \eqref{eq:act_fq}
+(W$b$A8). Biases and linear (non-\gls{ReLU}) tensors stay in
+\texttt{FP32}. Weight quantization shrinks the parameter store;
+activation quantization attacks the much larger on-chip traffic of
+feature maps, matching integer tensor-core inference paths
+\cite{micikevicius2022fp8,jacob2018quantization}.
 
 \subsection{Loss and Training Schedule}
 \label{sec:loss}
@@ -137,10 +139,12 @@ jointly from scratch.
 \label{sec:qat_protocol}
 Algorithm~\ref{alg:qat_prune} summarizes the pipeline. Every
 forward pass evaluates the neural receiver on $N_B$ OFDM slots under
-fake-quantized weights \eqref{eq:fake_quant}; the \gls{STE} updates
-the full-precision master copy. Optional magnitude pruning is applied
-only after \gls{QAT} has converged, followed by a short masked
-recovery fine-tune.
+fake-quantized weights \eqref{eq:fake_quant} and, for W$b$A8 models,
+post-\gls{ReLU} activation fake-quantization \eqref{eq:act_fq}; the
+\gls{STE} updates the full-precision master copy. Weight-only
+checkpoints warm-start the corresponding W$b$A8 fine-tunes. Optional
+magnitude pruning is applied only after weight \gls{QAT} has
+converged, followed by a short masked recovery fine-tune.
 
 \textbf{Concrete schedules used in our experiments.}
 All stages use $N_B{=}128$ slots per SGD step.
@@ -153,7 +157,11 @@ All stages use $N_B{=}128$ slots per SGD step.
   \item \emph{INT8 / INT4 QAT:}
         $N_{\mathrm{QAT}}=10^{6}+9{\times}10^{6}$ iterations at
         $10^{-4}$, i.e.\ $1.28{\times}10^{9}$ slots.
-  \item \emph{Post-prune fine-tune} (all formats, sparsity
+  \item \emph{W$b$A8 activation fine-tune:}
+        warm-start from the matching weight-only checkpoint; continue
+        under joint weight+activation fake-quantization with the same
+        optimizer schedule as the parent format.
+  \item \emph{Post-prune fine-tune} (weight formats, sparsity
         $\rho{=}50\%$):
         $N_{\mathrm{P}}=5{\times}10^{3}+10^{4}$ iterations at
         $5{\times}10^{-5}$ then $2{\times}10^{-5}$, i.e.\
@@ -162,17 +170,18 @@ All stages use $N_B{=}128$ slots per SGD step.
 \end{itemize}
 Depthwise kernels and the LLR readout are excluded from pruning;
 pointwise and aggregation/dense kernels are pruned jointly with a
-global magnitude threshold. The resulting ``QAT'' and
+global magnitude threshold. Weight-only, W$b$A8, and
 ``QAT~$+$~pruning'' checkpoints are compared in
 Section~\ref{sec:results}.
 
 \begin{algorithm}[t]
-\caption{Weight-only QAT with optional magnitude pruning for a
-neural receiver.}
+\caption{QAT with optional INT8 activation quantization and magnitude
+pruning for a neural receiver.}
 \label{alg:qat_prune}
 \begin{algorithmic}[1]
 \REQUIRE Pretrained \texttt{FP32} weights $\mathbf{W}$;
          target grid $\mathcal{G}$ (INT8/INT4/FP8/FP4);
+         activation flag $A\!\in\!\{\mathrm{off},\mathrm{A8}\}$;
          batch size $N_B$ (OFDM slots / step);
          QAT budget $N_{\mathrm{QAT}}$; optional sparsity
          $\rho\in[0,1)$ and prune budget $N_{\mathrm{P}}$
@@ -180,6 +189,10 @@ neural receiver.}
         $\mathbf{W}^{\star}$
 \STATE Insert per-channel abs-max fake-quantizers
        \eqref{eq:fake_quant} on all CNN/MLP kernels
+\IF{$A=\mathrm{A8}$}
+  \STATE Insert INT8 asymmetric post-\gls{ReLU} fake-quantizers
+         \eqref{eq:act_fq}
+\ENDIF
 \FOR{$t = 1$ \TO $N_{\mathrm{QAT}}$}
   \STATE Sample $N_B$ OFDM slots
          $(\mathbf{y},\mathbf{h},\mathbf{b})\!\sim\!\mathcal{D}$
@@ -189,6 +202,7 @@ neural receiver.}
          \COMMENT{forward fake-quant}
   \STATE $\hat{L},\hat{\mathbf{h}} \leftarrow
          f(\mathbf{y};\,\widehat{\mathbf{W}})$
+         \COMMENT{acts.\ fake-quant if A8}
   \STATE Compute $\mathcal{L}(\mathbf{b},\hat{L},\hat{\mathbf{h}})$
          via \eqref{eq:total_loss}; update $\mathbf{W}$ with
          Adam + \gls{STE}
@@ -208,4 +222,4 @@ neural receiver.}
        $\mathbf{W}^{\star}\leftarrow F_{\mathcal{G}}(\mathbf{W})$
 \end{algorithmic}
 \end{algorithm}
-)
+

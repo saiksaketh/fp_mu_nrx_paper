@@ -12,8 +12,8 @@ This paper advances efficient neural receivers beyond \gls{PTQ} by developing a 
 \paragraph*{Main contributions}
 \begin{itemize}
 
-  \item A principled \gls{QAT}  formulation with learnable clipping and per-channel scales, demonstrating that 4-bit \gls{QAT}  preserves deployment efficiency while maintaining accuracy.
+  \item A joint weight--activation \gls{QAT} pipeline for a MU-\gls{MIMO} neural receiver, combining per-channel weight fake-quantization (INT/FP microformats) with INT8 asymmetric post-\gls{ReLU} activations, optionally followed by 50\% magnitude pruning.
 
-  \item A comprehensive link‑level evaluation contrasting \gls{PTQ} and \gls{QAT} on 3GPP TR 38.901 CDL‑B/D channels across \gls{UE} speeds, with results reported at \gls{BLER} targets of 10\% and 1\%.
+  \item A link-level evaluation on DoubleTDL-low showing that W8A8 / FP8+A8 matches weight-only and \texttt{FP32} within $0.05$\,dB at 10\% and 1\% \gls{BLER}, together with an analytic complexity model that quantifies real weight compression, activation traffic, and bit-operations on the evaluation graph.
 
 \end{itemize}

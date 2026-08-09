@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering
+\caption{Weight-only QAT vs.\ weight+INT8 asymmetric activation QAT (A8)
+on DoubleTDL-low. Gaps $\Delta$ are the $E_b/N_0$ difference
+(W+A8 minus weight-only) at the stated BLER targets.}
+\label{tab:wo_vs_a8}
+\begin{tabular}{lcccc}
+\toprule
+ & \multicolumn{2}{c}{$E_b/N_0$ @ $10\%$ (dB)} & \multicolumn{2}{c}{$\Delta$ A8$-$W (dB)} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Format & W-only & W+A8 & $10\%$ & $1\%$ \\
+\midrule
+FP8 (E4M3) & 2.29 & 2.30 & +0.00 & +0.01 \\
+INT8 & 2.27 & 2.31 & +0.04 & +0.04 \\
+FP4 (E2M1) & 3.62 & 3.62 & $-0.01$ & +0.04 \\
+INT4 & 5.46 & 5.29 & $-0.18$ & $-0.44$ \\
+\bottomrule
+\end{tabular}
+\end{table}

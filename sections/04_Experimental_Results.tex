@@ -1,9 +1,9 @@
-% Results draft from campaign_su_mu_20260802-134343/mu_tdllow
-% (qat_only + qat_pruned). Numbers: log-linear interpolation of BLER
-% curves in qat_compare_bler.npz at targets 10% and 1%.
+% Results from campaign_su_mu_20260802-134343/mu_tdllow (qat_only + qat_pruned)
+% and campaign_su_mu_20260809-080711/mu_tdllow (qat_activation / W*A8).
+% Numbers: log-linear interpolation of BLER curves at targets 10% and 1%.
 %
-% Figure assets (from make_paper_figures.py --campaign):
-%   campaign_su_mu_20260802-134343/figures/mu_tdllow/bler_qat_only.pdf
+% Figure assets:
+%   campaign_su_mu_20260809-080711/figures/mu_tdllow/bler_qat_activation.pdf
 %   campaign_su_mu_20260802-134343/figures/mu_tdllow/bler_qat_pruned.pdf
 
 \section{Experimental Results and Discussion}
@@ -13,8 +13,8 @@
     \centering
     \begin{subfigure}[t]{0.48\linewidth}
         \centering
-        \includegraphics[width=\linewidth]{campaign_su_mu_20260802-134343/figures/mu_tdllow/bler_qat_only.pdf}
-        \caption{Weight-only QAT (MU-MIMO, DoubleTDL-low, $U{=}2$, 16-QAM)}
+        \includegraphics[width=\linewidth]{campaign_su_mu_20260809-080711/figures/mu_tdllow/bler_qat_activation.pdf}
+        \caption{Weight+A8 QAT (MU-MIMO, DoubleTDL-low, $U{=}2$, 16-QAM)}
         \label{fig:bler_qat}
     \end{subfigure}\hfill
     \begin{subfigure}[t]{0.48\linewidth}
@@ -26,35 +26,45 @@
     \caption{BLER vs.\ $E_b/N_0$ for the neural receiver on DoubleTDL-low
     (UE1: TDL-B100/400, UE2: TDL-C300/100).
     Both panels share the same axes and baseline curves (FP32, LS--LMMSE,
-    LMMSE--K-Best, perfect-CSI K-Best). Panel~(a) shows weight-only QAT in
-    FP8~(E4M3), INT8, FP4~(E2M1), and INT4; panel~(b) shows the same formats
-    after 50\% global magnitude pruning of pointwise and dense kernels.}
+    LMMSE--K-Best, perfect-CSI K-Best). Panel~(a) shows joint weight and
+    INT8 asymmetric post-\gls{ReLU} activation \gls{QAT} (W$b$A8) in
+    FP8~(E4M3), INT8, FP4~(E2M1), and INT4; panel~(b) shows the same
+    weight formats after 50\% global magnitude pruning of pointwise and
+    dense kernels.}
     \label{fig:BLER}
 \end{figure*}
 
-In this section, we evaluate the proposed neural receiver under weight-only
-quantization-aware training (QAT) at FP8~(E4M3), INT8, FP4~(E2M1), and INT4,
-and under joint QAT with 50\% magnitude pruning. Evaluation uses a
+\input{campaign_su_mu_20260809-080711/tables/mu_tdllow/wo_vs_a8}
+\input{campaign_su_mu_20260809-080711/tables/mu_tdllow/complexity}
+
+In this section, we evaluate the proposed neural receiver under a joint
+compression stack: weight \gls{QAT} at FP8~(E4M3), INT8, FP4~(E2M1), and
+INT4; INT8 asymmetric post-\gls{ReLU} activation quantization (W$b$A8);
+and 50\% magnitude pruning on the QAT weights. Evaluation uses a
 3GPP-compliant two-user PUSCH setup on DoubleTDL-low
 (Table~\ref{tab:sim_params}): UE~1 follows TDL-B100/400
 ($400$\,Hz Doppler) and UE~2 follows TDL-C300/100 ($100$\,Hz).
 We report block error rate (BLER)
 versus rate-adjusted $E_b/N_0$, and center the discussion on the SNR
-required to reach $10\%$ and $1\%$ BLER. All QAT and pruned receivers are
-compared against the full-precision (\texttt{FP32}) neural receiver,
-LS channel estimation with LMMSE equalization, LMMSE channel estimation
-with K-Best detection, and an ideal K-Best receiver with perfect CSI.
+required to reach $10\%$ and $1\%$ BLER. All quantized and pruned
+receivers are compared against the full-precision (\texttt{FP32}) neural
+receiver, LS channel estimation with LMMSE equalization, LMMSE channel
+estimation with K-Best detection, and an ideal K-Best receiver with
+perfect CSI. An analytic complexity model of the deployed graph
+complements the radio results.
 
-{\bf Quantization-aware training.}
-Figure~\ref{fig:bler_qat} shows BLER for the unpruned QAT receivers.
-Eight-bit quantization is effectively lossless: FP8~(E4M3) and INT8 reach
-$10\%$ BLER at $2.29$\,dB and $2.27$\,dB, respectively, matching the FP32
-operating point of $2.30$\,dB to within $0.03$\,dB; at $1\%$ BLER the same
-formats require $3.52$\,dB and $3.48$\,dB versus $3.58$\,dB for FP32.
-Relative to the practical LS--LMMSE baseline ($4.14$\,dB / $5.43$\,dB at
-$10\%$ / $1\%$ BLER), both 8-bit QAT receivers retain an SNR advantage of
-approximately $1.85$--$1.95$\,dB and remain within $\sim$0.2\,dB of the
-stronger LMMSE--K-Best detector.
+{\bf Quantization-aware training (weights).}
+Figure~\ref{fig:bler_qat} shows BLER for the unpruned QAT receivers
+under joint weight+activation fake-quantization; the corresponding
+weight-only operating points are reported in Table~\ref{tab:wo_vs_a8}.
+Eight-bit weight quantization is effectively lossless: FP8~(E4M3) and
+INT8 reach $10\%$ BLER at $2.29$\,dB and $2.27$\,dB, respectively,
+matching the FP32 operating point of $2.30$\,dB to within $0.03$\,dB;
+at $1\%$ BLER the same formats require $3.52$\,dB and $3.48$\,dB versus
+$3.58$\,dB for FP32. Relative to the practical LS--LMMSE baseline
+($4.14$\,dB / $5.43$\,dB at $10\%$ / $1\%$ BLER), both 8-bit QAT
+receivers retain an SNR advantage of approximately $1.85$--$1.95$\,dB
+and remain within $\sim$0.2\,dB of the stronger LMMSE--K-Best detector.
 
 At 4-bit precision the choice of format dominates. FP4~(E2M1) attains
 $10\%$ BLER at $3.62$\,dB and $1\%$ BLER at $4.93$\,dB---an SNR gap of
@@ -63,10 +73,24 @@ by $0.52$\,dB and $0.50$\,dB at the two targets. In contrast, INT4
 requires $5.46$\,dB and $7.36$\,dB ($+3.16$\,dB / $+3.78$\,dB versus
 FP32) and falls $1.32$--$1.93$\,dB \emph{behind} LS--LMMSE. Relative to
 FP4, INT4 incurs an additional $1.84$\,dB at $10\%$ BLER and $2.43$\,dB at
-$1\%$ BLER at identical $8\times$ weight compression. The non-uniform
-E2M1 grid therefore roughly halves the 4-bit penalty of a uniform integer
-grid and preserves the neural receiver's gain over conventional LS-based
-detection.
+$1\%$ BLER at identical nominal $8\times$ weight compression. The
+non-uniform E2M1 grid therefore roughly halves the 4-bit penalty of a
+uniform integer grid and preserves the neural receiver's gain over
+conventional LS-based detection.
+
+{\bf Activation quantization is radio-neutral at 8~bits.}
+Table~\ref{tab:wo_vs_a8} compares each weight format with its W$b$A8
+counterpart (INT8 asymmetric post-\gls{ReLU} fake-quantization).
+INT8+A8 and FP8+A8 reach $10\%$ BLER at $2.31$\,dB and $2.30$\,dB---within
+$0.04$\,dB of their weight-only parents and of FP32---and the gap at
+$1\%$ BLER remains $\le 0.05$\,dB. FP4+A8 likewise tracks weight-only
+FP4 to within $0.04$\,dB at both targets. Activation quantization
+therefore adds the arithmetic and bandwidth gains of 8-bit activations
+without a measurable radio penalty on this MU-MIMO link. Because W$b$A8
+matches weight-only BLER, the pruning results below---measured on the
+QAT weight checkpoints---characterize the sparse operating point of the
+same joint stack: weight precision, INT8 activations, and 50\%
+sparsity.
 
 {\bf QAT with magnitude pruning.}
 Figure~\ref{fig:bler_prune} repeats the comparison after 50\% global
@@ -92,12 +116,15 @@ QAT absorbs the same sparsity with negligible radio impact.
 
 {\bf FP8/INT8 QAT vs.\ FP32.}
 The near-identical $10\%$ and $1\%$ BLER operating points of FP8~(E4M3),
-INT8, and FP32---gaps below $0.1$\,dB with or without 50\% pruning---show
-that 8-bit weight-only QAT is sufficient for this MU-MIMO receiver. At
-this precision the STE fake-quantization and per-channel abs-max scaling
-introduce no material distribution shift relative to full precision, so
-$4\times$ weight compression (and an additional $2\times$ from 50\%
-sparsity for the pruned variants) comes at virtually no SNR cost.
+INT8, their W$b$A8 counterparts, and FP32---gaps below $0.1$\,dB with or
+without 50\% pruning---show that 8-bit joint weight--activation QAT is
+sufficient for this MU-MIMO receiver. At this precision the STE
+fake-quantization, per-channel abs-max weight scales, and asymmetric
+INT8 activation quantizers introduce no material distribution shift
+relative to full precision, so real weight compression of about
+$3.8\times$ (and an additional storage reduction from 50\% sparsity for
+the pruned variants) comes at virtually no SNR cost, while INT8
+activations unlock the integer arithmetic path.
 
 {\bf FP4 QAT vs.\ INT4 QAT.}
 A clear SNR gap separates FP4~(E2M1) from INT4 at both BLER targets:
@@ -108,7 +135,8 @@ histograms of the convolutional graph neural receiver; uniform INT4
 quantization cannot recover the same dynamic range at four bits. The gap
 widens under pruning because magnitude sparsification removes small
 weights that INT4 already represents poorly, whereas FP4 retains usable
-resolution for the surviving coefficients.
+resolution for the surviving coefficients. The same FP4--INT4 ordering
+is preserved under W$b$A8 (Table~\ref{tab:wo_vs_a8}).
 
 {\bf Pruning under QAT.}
 Across formats, 50\% magnitude pruning is nearly transparent at 8 bits
@@ -119,6 +147,35 @@ co-designed: once the weight grid is already information-starved, as with
 INT4, further zeroing of coefficients compounds inter-layer error and
 erodes the neural receiver's advantage over classical detection. FP4
 QAT, by contrast, provides enough representational headroom for joint
-$8\times$ compression and 50\% sparsity while remaining above the
-LS--LMMSE baseline at both $10\%$ and $1\%$ BLER.
-)
+weight compression and 50\% sparsity while remaining above the
+LS--LMMSE baseline at both $10\%$ and $1\%$ BLER---and, given the
+radio-neutral A8 results, this sparse FP4 operating point is compatible
+with INT8 asymmetric activations in the same stack.
+
+{\bf Analytic complexity.}
+Table~\ref{tab:complexity} summarizes the cost of the joint stack on
+the instantiated evaluation graph (132~\glspl{PRB}, 2~users,
+8 iterations). The receiver performs $19.22$\,G\,\glspl{MAC} per slot,
+of which $76\%$ come from $1{\times}1$ pointwise convolutions---the
+dominant GEMM-like operator targeted by low-bit quantization.
+Including FP32 biases and FP16 per-channel scales, 8-bit weights shrink
+the footprint from $1708.5$\,KiB to $453.1$\,KiB ($3.8\times$), and
+4-bit weights to $241.6$\,KiB ($7.1\times$). Activation traffic dominates
+memory movement: $683$\,MiB of FP32 feature maps per slot versus a
+$1.7$\,MiB weight store. With INT8 asymmetric activations, 8-bit
+weights reduce bit-operations from $19.7$\,T to $1.2$\,T per slot
+($16\times$); adding 50\% magnitude pruning further yields
+$0.7$\,T\,\glspl{BOP}/slot at 8~bits and $0.3$\,T at 4~bits, with
+sparse weight stores of $310.9$\,KiB and $194.1$\,KiB, respectively.
+Thus the joint stack delivers substantial analytic reductions in
+weight storage, activation volume, and bit-operations while retaining
+near-\texttt{FP32} BLER at 8~bits.
+
+\section{Limitations}
+\label{sec:limitations}
+Our study focuses on DoubleTDL-low with MCS~14 and reports analytic
+graph complexity (storage, \glspl{MAC}, \glspl{BOP}) alongside link-level
+\gls{BLER}. Extending the evaluation to richer MCS sets, higher antenna
+correlation, and larger user loads, as well as broadening activation
+coverage beyond post-\gls{ReLU} tensors, are natural next steps that
+build on the operating points established here.
