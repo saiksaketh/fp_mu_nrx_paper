@@ -7,6 +7,22 @@
 \setlength{\tabcolsep}{3.5pt}
 \begin{tabular}{@{}lccccc@{}}
 \toprule
+Config. & W/A & Spars. & Wt.\ (KiB)  & BOPs (T) \\
+\midrule
+FP32        & 32/32 & --   & 1708.5  & 19.7 \\
+FP16        & 16/16 & --   &  862.1  &  4.9 \\
+W8A8        & 8/8   & --   &  453.1  &  1.2 \\
+W8A8+P      & 8/8   & 50\% &  310.9 &  0.7 \\
+W4A8        & 4/8   & --   &  241.6   0.6 \\
+W4A8+P      & 4/8   & 50\% &  194.1   0.3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+\begin{comment}
+\toprule
 Config. & W/A & Spars. & Wt.\ (KiB) & MACs (G) & BOPs (T) \\
 \midrule
 FP32        & 32/32 & --   & 1708.5 & 19.22 & 19.7 \\
@@ -16,5 +32,4 @@ W8A8+P      & 8/8   & 50\% &  310.9 & 10.61 &  0.7 \\
 W4A8        & 4/8   & --   &  241.6 & 19.22 &  0.6 \\
 W4A8+P      & 4/8   & 50\% &  194.1 & 10.61 &  0.3 \\
 \bottomrule
-\end{tabular}
-\end{table}
+\end{comment}
