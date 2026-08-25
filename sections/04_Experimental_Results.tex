@@ -129,8 +129,6 @@ $3.8\times$ (and an additional storage reduction from 50\% sparsity for
 the pruned variants) comes at virtually no SNR cost, while INT8
 activations unlock the integer arithmetic path.
 
-\input{insight_fp4_sparsity/figures_inc}
-
 {\bf Why FP4 works: kernel histogram versus the two 4-bit grids.}
 A clear SNR gap separates FP4~(E2M1) from INT4 at both BLER targets:
 $\sim$1.8\,dB without pruning and $\sim$2.9\,dB with 50\% pruning at
@@ -138,41 +136,86 @@ $10\%$ BLER. Figure~\ref{fig:weight_hist} gives the empirical reason,
 rather than a format slogan. After the same per-channel abs-max
 normalization used in \gls{QAT} \eqref{eq:absmax_scale}, the
 $404{,}224$ pointwise and dense coefficients of the \texttt{FP32}
-receiver are strongly leptokurtic (excess kurtosis $3.97$). Sixty-five
-percent of the mass lies below the first nonzero INT4 reconstruction
-level ($|w|<0.14$), and $79\%$ lies in $|w|<0.25$
-(Fig.~\ref{fig:weight_hist_zoom}). Uniform INT4 therefore spends seven
-of its fourteen nonzero codepoints on a nearly empty tail, and inside
-the high-mass body it has only two reconstruction levels including
-zero. E2M1 spends those bits differently: four levels
-($0$, $0.08$, $0.17$, $0.25$) sit in $|w|\le 0.25$, while the tail
-is coarser. QAT can only adapt weights onto the available grid; when
-most of the coefficient mass already sits near zero, the non-uniform
-E2M1 grid is the one the receiver can actually use. The same FP4--INT4 ordering is
-preserved under W$b$A8 (Table~\ref{tab:wo_vs_a8}).
+receiver are strongly leptokurtic (excess kurtosis $3.97$).
+Figure~\ref{fig:weight_hist_zoom} folds those kernels to $|w|$ and
+zooms into the peak: 65\% of the mass lies below the first nonzero
+INT4 reconstruction level ($|w|<0.14$), and $79\%$ lies in
+$|w|<0.25$. The shaded band in that figure is exactly the INT4 dead
+zone---INT4 has no nonzero code inside it---while FP4 places an extra
+level at $0.08$. Uniform INT4 therefore spends seven of its fourteen
+nonzero codepoints on a nearly empty tail, and inside the high-mass
+body it has only two reconstruction levels including zero. E2M1 spends
+those bits differently: four levels ($0$, $0.08$, $0.17$, $0.25$) sit
+in $|w|\le 0.25$, while the tail is coarser. QAT can only adapt
+weights onto the available grid; when most of the coefficient mass
+already sits near zero, the non-uniform E2M1 grid is the one the
+receiver can actually use. The same FP4--INT4 ordering is preserved
+under W$b$A8 (Table~\ref{tab:wo_vs_a8}).
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{insight_fp4_sparsity/figures/weight_histogram_signed.pdf}
+    \caption{Why FP4~(E2M1) fits this neural receiver at 4~bits.
+    Each weight is scaled by its output-channel maximum so both 4-bit
+    grids occupy $[-1,1]$, matching \gls{QAT}.
+    Histogram of the trained \texttt{FP32} pointwise and dense kernels,
+    with the values each 4-bit format can represent shown as ticks
+    (INT4 equally spaced; FP4 denser near zero).}
+    \label{fig:weight_hist}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{insight_fp4_sparsity/figures/weight_histogram_zoom.pdf}
+    \caption{Count histogram of the same kernels as
+    Fig.~\ref{fig:weight_hist}, folded to $|w|$ and zoomed to the peak.
+    The shaded band is $|w|<0.14$ (the first nonzero INT4 step) and
+    holds 65\% of all weights; FP4 places an extra level at $0.08$
+    inside that band. In $|w|<0.25$ (79\% of weights) INT4 has two
+    representable values including zero, FP4 has four.}
+    \label{fig:weight_hist_zoom}
+\end{figure}
 
 {\bf Pruning under QAT, and why INT4 collapses.}
 Across formats, 50\% magnitude pruning is nearly transparent at 8 bits
 ($\lesssim$0.12\,dB at $1\%$ BLER) and even slightly beneficial for FP4
-within Monte Carlo variation, but catastrophic for INT4. The mechanism
-is visible in Fig.~\ref{fig:sparsity_layers}. A \emph{global} $50\%$
-threshold does not yield $50\%$ zeros in every layer: INT4
-systematically over-prunes the residual writes of width $d_s{=}56$
-that close each CGNN block onto the skip connection. Update CNN
-$\to$~state ($128{\to}56$) reaches $86.5\%$ mean zeros (max $91.4\%$
-in one iteration) versus $53.8\%$ (max $66.2\%$) for FP4; Input CNN
-$\to$~state is $78.5\%$ zeros under INT4 and only $36.1\%$ under FP4.
-FP4 sparsity tracks INT8 on those same layers, i.e., the 4-bit
-microformat preserves a magnitude profile that the global threshold
-can treat like an 8-bit model. INT4 does not: after QAT, too many
-surviving coefficients are small, so the $50\%$ budget is paid almost
-entirely by emptying the residual path. Combined with the coarse INT4
-body grid of Fig.~\ref{fig:weight_hist}, that is why pruned INT4 falls
-more than $2$\,dB behind LS--LMMSE, whereas pruned FP4 stays within
-$0.1$\,dB of unpruned FP4 and ahead of the classical baseline. The
-radio-neutral A8 results then imply that this sparse FP4 operating
-point is compatible with INT8 asymmetric activations in the same
-stack.
+within Monte Carlo variation, but catastrophic for INT4.
+Figure~\ref{fig:sparsity_layers} shows where a \emph{global} $50\%$
+magnitude threshold actually lands. It does not yield $50\%$ zeros in
+every layer: INT4 systematically over-prunes the residual writes of
+width $d_s{=}56$ that close each CGNN block onto the skip connection
+(purple bands). Update CNN $\to$~state ($128{\to}56$) reaches
+$86.5\%$ mean zeros (max $91.4\%$ in one iteration) versus $53.8\%$
+(max $66.2\%$) for FP4; Input CNN $\to$~state is $78.5\%$ zeros under
+INT4 and only $36.1\%$ under FP4. FP4 sparsity tracks INT8 on those
+same layers, i.e., the 4-bit microformat preserves a magnitude profile
+that the global threshold can treat like an 8-bit model. INT4 does
+not: after QAT, too many surviving coefficients are small, so the
+$50\%$ budget is paid almost entirely by emptying the residual path.
+Combined with the coarse INT4 body grid of
+Figs.~\ref{fig:weight_hist} and~\ref{fig:weight_hist_zoom}, that is
+why pruned INT4 falls more than $2$\,dB behind LS--LMMSE, whereas
+pruned FP4 stays within $0.1$\,dB of unpruned FP4 and ahead of the
+classical baseline. The radio-neutral A8 results then imply that this
+sparse FP4 operating point is compatible with INT8 asymmetric
+activations in the same stack.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{insight_fp4_sparsity/figures/sparsity_bars.pdf}
+    \caption{A single global $50\%$ magnitude threshold does not zero
+    $50\%$ of every layer.
+    Horizontal bars: share of weights set to zero in each layer, for INT4,
+    FP4, and INT8 \gls{QAT} checkpoints (hatches remain readable in
+    grayscale).
+    Purple bands mark residual state writes of width $d_s{=}56$.
+    Error bars: standard deviation across the eight unrolled
+    update/user-mix iterations (input CNN has one copy, so no whisker).
+    INT4 over-zeros those residual writes (78\% and 87\% mean zeros vs.\
+    36\% and 54\% for FP4), which is why pruned INT4 BLER collapses in
+    Fig.~\ref{fig:bler_prune}.}
+    \label{fig:sparsity_layers}
+\end{figure}
 
 {\bf Analytic complexity.}
 Table~\ref{tab:complexity} summarizes the cost of the joint stack on

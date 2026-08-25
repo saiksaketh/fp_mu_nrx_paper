@@ -15,12 +15,14 @@ to $16\times$ fewer bit-operations per slot relative to
 reason is the kernel histogram: $65\%$ of per-channel-normalized
 coefficients sit below the first INT4 level, so E2M1's extra
 near-zero reconstruction points cover the body of the distribution
-that a uniform 4-bit grid leaves unresolved (Fig.~\ref{fig:weight_hist}).
+that a uniform 4-bit grid leaves unresolved
+(Figs.~\ref{fig:weight_hist} and~\ref{fig:weight_hist_zoom}).
 FP4~(E2M1) limits the gap to \texttt{FP32} to about $1.3$\,dB with
 or without A8 and still beats \gls{LS}--\gls{LMMSE}; INT4 roughly
 doubles that penalty. Under 50\% pruning the same asymmetry appears:
 8-bit and FP4 receivers move by $\lesssim$0.1\,dB, whereas INT4
-empties residual $d_s$ writes (up to $91\%$ sparse) and degrades by
+empties residual $d_s$ writes (up to $91\%$ sparse,
+Fig.~\ref{fig:sparsity_layers}) and degrades by
 more than $1$\,dB further. Taken together, these results
 identify W8A8 / FP8+A8 as a radio-neutral operating point for
 integer neural uplink inference, and FP4~\gls{QAT} as a practical
