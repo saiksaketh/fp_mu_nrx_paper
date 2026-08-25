@@ -11,19 +11,28 @@ INT8+A8 match both their weight-only parents and the \texttt{FP32}
 receiver within $0.05$\,dB at $10\%$ and $1\%$ \gls{BLER}, while an
 analytic cost model shows $3.8\times$ real weight compression and up
 to $16\times$ fewer bit-operations per slot relative to
-\texttt{FP32}. At 4~bits the format choice remains decisive.
+\texttt{FP32}. At 4~bits the format choice remains decisive, and the
+reason is the kernel histogram: $65\%$ of per-channel-normalized
+coefficients sit below the first INT4 level, so E2M1's extra
+near-zero reconstruction points cover the body of the distribution
+that a uniform 4-bit grid leaves unresolved (Fig.~\ref{fig:weight_hist}).
 FP4~(E2M1) limits the gap to \texttt{FP32} to about $1.3$\,dB with
 or without A8 and still beats \gls{LS}--\gls{LMMSE}; INT4 roughly
 doubles that penalty. Under 50\% pruning the same asymmetry appears:
 8-bit and FP4 receivers move by $\lesssim$0.1\,dB, whereas INT4
-degrades by more than $1$\,dB further. Taken together, these results
+empties residual $d_s$ writes (up to $91\%$ sparse) and degrades by
+more than $1$\,dB further. Taken together, these results
 identify W8A8 / FP8+A8 as a radio-neutral operating point for
 integer neural uplink inference, and FP4~\gls{QAT} as a practical
 path to $7.1\times$ weight compression (with or without 50\%
 sparsity) when additional rate is available.
 
-Looking ahead, co-designing structured (e.g., 2:4) sparsity with the
-quantization grid, and validating the stack across broader channel and
-MCS conditions, are promising directions toward memory- and
-compute-efficient neural uplink receivers for \gls{6G} \gls{RAN}.
+Looking ahead, packing the trained E2M1 kernels into native MXFP4
+inference paths is a natural export step: the codebook already matches
+the MXFP4 element type \cite{ocp2023mx}, so the remaining work is
+deployment packaging rather than a new radio design. Co-designing
+structured (e.g., 2:4) sparsity with the quantization grid, and
+validating the stack across broader channel and MCS conditions, are
+likewise promising directions toward memory- and compute-efficient
+neural uplink receivers for \gls{6G} \gls{RAN}.
 

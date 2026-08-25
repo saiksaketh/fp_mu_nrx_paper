@@ -81,20 +81,24 @@ Low-bit floating-point formats allocate a non-uniform grid that
 preserves dynamic range near zero---a useful match to the typically
 heavy-tailed histograms of trained convolutional kernels
 \cite{micikevicius2022fp8,rouhani2023microscaling}. We consider two
-Open Compute Project (OCP) microformats natively supported by recent
-inference hardware.
+element formats standardized in the Open Compute Project (OCP)
+microscaling family \cite{ocp2023mx}.
 
 \textbf{FP8~(E4M3).}
 An E4M3 value comprises one sign bit, four exponent bits, and three
 mantissa bits. Following the OCP specification
-\cite{micikevicius2022fp8,rouhani2023microscaling}, the finite grid
+\cite{micikevicius2022fp8,ocp2023mx}, the finite grid
 has maximum magnitude $g_{\max}=448$. Relative to INT8, E4M3 provides
 a comparable bit budget with a non-uniform spacing that better covers
 large dynamic ranges.
 
 \textbf{FP4~(E2M1).}
-An E2M1 value comprises one sign bit, two exponent bits, and one
-mantissa bit, yielding the fifteen finite levels
+Among possible 4-bit exponent--mantissa allocations, we select E2M1
+because the OCP MX specification defines it as the sole FP4 element
+format of the concrete MXFP4 standard \cite{ocp2023mx}. This anchors
+the design in a hardware-facing interchange standard rather than an
+ad hoc 4-bit grid. An E2M1 value comprises one sign bit, two
+exponent bits, and one mantissa bit, yielding the fifteen finite levels
 \begin{equation}
 \label{eq:fp4_grid}
   \mathcal{G}_{\mathrm{E2M1}}
@@ -103,7 +107,11 @@ mantissa bit, yielding the fifteen finite levels
 with $g_{\max}=6$. At identical nominal $8\times$ weight compression,
 E2M1 therefore offers a coarser but non-uniform alternative to INT4;
 both formats use the same abs-max scaling \eqref{eq:absmax_scale} and
-STE \eqref{eq:ste} during \gls{QAT}.
+STE \eqref{eq:ste} during \gls{QAT}. Section~\ref{sec:results} tests
+this design empirically: the trained kernels are leptokurtic, so extra
+E2M1 levels near zero cover the body of the histogram that a uniform
+INT4 grid leaves unresolved (Fig.~\ref{fig:weight_hist}), which is the
+mechanism behind the FP4--INT4 \gls{BLER} gap.
 
 \subsection{INT8 Asymmetric Activation Quantization}
 \label{sec:act_quant}
