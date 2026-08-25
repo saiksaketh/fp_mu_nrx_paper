@@ -1,15 +1,85 @@
-\section{Quantization-Aware Training, Activations, and Pruning}
+\section{Background}
 \label{sec:qat_pruning}
 
-Deploying a neural receiver under base-station memory and latency
-constraints motivates joint reduction of weight precision, activation
-precision, and---optionally---sparsity. This section formalizes the
-three compression mechanisms used in our experiments: weight
-\gls{QAT} with integer and floating-point microformats, INT8
-asymmetric fake-quantization of post-\gls{ReLU} activations, and
-unstructured magnitude pruning. Biases remain in full precision
-(\texttt{FP32}); convolutional and dense kernels are quantized and,
-optionally, sparsified.
+This section reviews the MU-\gls{MIMO} uplink model, the convolutional
+graph neural receiver that we compress, and the associated training
+objective. It then recalls per-channel fake quantization and the
+integer and floating-point microformats used as weight grids.
+Activation quantization and magnitude pruning, which form the proposed
+compression stack, are specified in Section~\ref{sec:nrx_qat}.
+
+\subsection{Uplink Setup}
+\label{sec:system_model}
+$U$ single-layer \glspl{UE} share the same time--frequency resources
+toward a base station with $B$ antennas. After OFDM demodulation, each
+resource element $(s,t)$ observes
+\begin{equation}
+\label{eq:mu_mimo}
+  \mathbf{y}_{s,t}
+  = \sum_{u=1}^{U}
+    \mathbf{H}_{s,t,u}\,\mathbf{x}_{s,t,u}
+    + \mathbf{n}_{s,t},
+  \qquad
+  \mathbf{n}_{s,t}\sim\mathcal{CN}(\mathbf{0},N_0\mathbf{I}),
+\end{equation}
+with $\mathbf{y}_{s,t}\in\mathbb{C}^{B}$. Payload bits are
+\gls{LDPC}-encoded and mapped to \gls{QAM} symbols; known
+\gls{DMRS} tones enable an initial least-squares channel estimate.
+The neural receiver consumes the full post-\gls{FFT} slot (data and
+pilots) and emits per-bit \glspl{LLR} for a conventional 5G~NR
+decoder.
+
+\subsection{Neural Receiver Architecture}
+\label{sec:architecture}
+We build on the convolutional graph neural network (CGNN) of
+\cite{scamnrx}, designed for flexible MU-\gls{MIMO} \gls{PUSCH}
+reception; related deployment studies emphasize tight memory and
+compute budgets \cite{wiesmayr2024design}. A small input CNN embeds
+each resource element into a state of dimension $d_s{=}56$;
+$N_{\mathrm{it}}{=}8$ unrolled blocks then mix information across
+users (dense aggregation) and across the time--frequency grid
+(separable convolutions); a final dense readout produces \glspl{LLR}.
+Separable layers factor into a depthwise spatial filter and a
+pointwise mixer; only the latter, together with the aggregation and
+dense kernels, is eligible for pruning (Section~\ref{sec:pruning}).
+The same weights apply across user counts and bandwidths, so a model
+trained on $4$ \glspl{PRB} can be evaluated on a $132$-\gls{PRB} grid.
+In the large configuration used here, both the input and state CNNs
+have widths $[128,128]$, aggregation uses width $64$, and the readout
+uses width $128$.
+
+\subsection{Loss and Training Schedule}
+\label{sec:loss}
+Training is driven by bit-metric decoding quality with an auxiliary
+channel estimate. If $B$ denotes the coded bits on data tones,
+$\hat{L}$ the predicted \glspl{LLR}, and $\hat{\mathbf{h}}$ a
+refined channel from a second readout, we minimize
+\begin{align}
+\label{eq:bce}
+  \mathcal{L}_{\mathrm{BCE}}
+  &= -\mathbb{E}\!\left[
+       B\log\sigma(\hat{L})
+       +(1-B)\log\!\bigl(1-\sigma(\hat{L})\bigr)
+     \right], \\
+\label{eq:mse}
+  \mathcal{L}_{\mathrm{MSE}}
+  &= \mathbb{E}\!\bigl[
+       \|\hat{\mathbf{h}}-\mathbf{h}\|_{2}^{2}
+     \bigr], \\
+\label{eq:total_loss}
+  \mathcal{L}
+  &= \mathcal{L}_{\mathrm{BCE}}
+     + \lambda\,\mathcal{L}_{\mathrm{MSE}},
+\end{align}
+with $\sigma$ the sigmoid. Both terms are summed over all
+$N_{\mathrm{it}}$ unrolled receiver iterations, and $\lambda$ decays
+from $0.02$ to $0.01$ across two schedule phases. Each optimizer step
+draws a mini-batch of $N_B{=}128$ independently simulated OFDM
+slots in Sionna \cite{sionna}, with random active-user counts,
+velocities in $[0,56]$\,m/s, and rate-adjusted $E_b/N_0$ in a
+phase-dependent window of approximately $0$--$15$\,dB. The
+\texttt{FP32} baseline is trained with Adam; quantized models
+warm-start from that checkpoint.
 
 \subsection{Weight Fake Quantization}
 \label{sec:fake_quant}
@@ -35,7 +105,8 @@ and the fake-quantized weight is
 \end{equation}
 where $\mathrm{round}_{\mathcal{G}}(\cdot)$ maps to the nearest
 element of $\mathcal{G}$. Scales $s_c$ are recomputed from the live
-weights on every forward pass (no frozen calibration set).
+weights on every forward pass (no frozen calibration set). Biases
+remain in \texttt{FP32}.
 
 For integer \gls{QAT} with bit-width $b\in\{4,8\}$ we use a symmetric
 narrow-range grid
@@ -73,12 +144,12 @@ quantization,
 where $\mathbf{y}$ is the received post-\gls{FFT} slot, $\mathbf{b}$
 are the coded bits, $f(\cdot;\widehat{\mathbf{W}})$ is the neural
 receiver with fake-quantized kernels, and $\mathcal{D}$ is the
-training distribution (detailed in Section~\ref{sec:nrx_qat}).
+training distribution of Section~\ref{sec:loss}.
 
 \subsection{Floating-Point Microformats: FP8 and FP4}
 \label{sec:fp_micro}
 Low-bit floating-point formats allocate a non-uniform grid that
-preserves dynamic range near zero---a useful match to the typically
+preserves dynamic range near zero, which matches the typically
 heavy-tailed histograms of trained convolutional kernels
 \cite{micikevicius2022fp8,rouhani2023microscaling}. We consider two
 element formats standardized in the Open Compute Project (OCP)
@@ -89,79 +160,18 @@ An E4M3 value comprises one sign bit, four exponent bits, and three
 mantissa bits. Following the OCP specification
 \cite{micikevicius2022fp8,ocp2023mx}, the finite grid
 has maximum magnitude $g_{\max}=448$. Relative to INT8, E4M3 provides
-a comparable bit budget with a non-uniform spacing that better covers
+a comparable bit budget with non-uniform spacing that better covers
 large dynamic ranges.
 
 \textbf{FP4~(E2M1).}
-Among possible 4-bit exponent--mantissa allocations, we select E2M1
-because the OCP MX specification defines it as the sole FP4 element
-format of the concrete MXFP4 standard \cite{ocp2023mx}. This anchors
-the design in a hardware-facing interchange standard rather than an
-ad hoc 4-bit grid. An E2M1 value comprises one sign bit, two
-exponent bits, and one mantissa bit, yielding the fifteen finite levels
+An E2M1 value comprises one sign bit, two exponent bits, and one
+mantissa bit, yielding the fifteen finite levels
 \begin{equation}
 \label{eq:fp4_grid}
   \mathcal{G}_{\mathrm{E2M1}}
   = \{0,\pm0.5,\pm1,\pm1.5,\pm2,\pm3,\pm4,\pm6\},
 \end{equation}
 with $g_{\max}=6$. At identical nominal $8\times$ weight compression,
-E2M1 therefore offers a coarser but non-uniform alternative to INT4;
-both formats use the same abs-max scaling \eqref{eq:absmax_scale} and
-STE \eqref{eq:ste} during \gls{QAT}. Section~\ref{sec:results} tests
-this design empirically: the trained kernels are leptokurtic, so extra
-E2M1 levels near zero cover the body of the histogram that a uniform
-INT4 grid leaves unresolved (Figs.~\ref{fig:weight_hist}
-and~\ref{fig:weight_hist_zoom}), which is the
-mechanism behind the FP4--INT4 \gls{BLER} gap.
-
-\subsection{INT8 Asymmetric Activation Quantization}
-\label{sec:act_quant}
-Weight quantization alone leaves the dominant memory traffic---layer
-activations---untouched. After each \gls{ReLU}, the activation tensor
-is nonnegative, so we apply \emph{asymmetric} uniform INT8
-fake-quantization over the per-tensor range
-$[0,\max(\mathbf{a})]$:
-\begin{equation}
-\label{eq:act_fq}
-  \widehat{\mathbf{a}}
-  = Q_{\mathrm{INT8}}^{\mathrm{asym}}(\mathbf{a}),
-  \qquad
-  \mathbf{a}=\mathrm{ReLU}(\cdot).
-\end{equation}
-Linear layers (residual state, aggregation outputs, and LLR /
-channel-estimate heads) and the network input remain in
-\texttt{FP32}; only post-\gls{ReLU} feature maps are quantized. This
-matches integer inference paths that keep unsigned activations after
-\gls{ReLU} while preserving full-precision residuals
-\cite{jacob2018quantization,wu2020integer}. During \gls{QAT},
-\eqref{eq:act_fq} is composed with weight fake-quantization
-\eqref{eq:fake_quant}, so the network jointly adapts to weight and
-activation noise. We denote such models by W$b$A8 (weight bit-width
-$b$, INT8 activations).
-
-\subsection{Unstructured Magnitude Pruning}
-\label{sec:pruning}
-In addition to reducing bit-width, we sparsify kernels by unstructured
-magnitude pruning \cite{song_han_1,kuzmin2023pruning}. After a
-converged \gls{QAT} checkpoint is obtained, let
-$\mathcal{T}$ collect the eligible weight tensors
-(separable-convolution \emph{pointwise} kernels and aggregation/dense
-kernels; depthwise kernels and the LLR readout are left dense). A
-single global threshold $\tau$ is chosen so that a target fraction
-$\rho$ of coefficients in $\mathcal{T}$ satisfy $|w|<\tau$. With a
-binary keep-mask $\mathbf{M}$ of matching shape,
-\begin{equation}
-\label{eq:prune_mask}
-  W^{\mathrm{pr}}_{i}
-  = M_{i}\,W_{i},
-  \qquad
-  M_{i}=\mathds{1}_{\{|W_{i}|\ge\tau\}},
-\end{equation}
-we obtain an unstructured sparsity pattern with unchanged tensor
-shapes. In our experiments $\rho=50\%$ (global magnitude pruning).
-The pruned model is then fine-tuned under the same fake-quantization
-operators \eqref{eq:fake_quant}, with hard projection onto
-$\mathbf{M}$ after each optimizer step so that pruned coordinates
-remain zero. This yields a joint low-precision and sparse receiver
-without altering the computational graph topology.
-)
+E2M1 is a coarser but non-uniform alternative to INT4; both formats
+use the same abs-max scaling \eqref{eq:absmax_scale} and
+STE \eqref{eq:ste} during \gls{QAT}.
