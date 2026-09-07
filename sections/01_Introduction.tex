@@ -1,19 +1,58 @@
 \section{Introduction}
 \label{sec:intro}
-Deep Learning has recently delivered strong gains at the \gls{PHY}, where fully-convolutional neural receivers such as DeepRx replace channel estimation, equalization, and demapping to improve error-rate performance under standardized channels and mobility \cite{deeprx}. End-to-end designs further demonstrate that learned receivers can reduce or even eliminate pilot overhead while maintaining reliability, highlighting the practical promise of \gls{AI}-native \gls{PHY} stacks for beyond-5G and 6G systems \cite{e2e_faa}. However, deployment in edge-constrained radio hardware remains limited by compute, memory, and latency budgets, making precision reduction via quantization central to practical neural receiver inference. In this context, \gls{QAT} adapts the model during training to low-precision arithmetic \cite{quantization_whitepaper, wu2020integer,krishnamoorthi2018quantizing,jacob2017quantizationtrainingneuralnetworks, lsq+,lectures_songhan}.\par
+% Remaining placeholders (no matching entry in references.bib yet):
+%   model_based_nrx, bell_labs, reinhard_lopamudra
+Neural receivers (NRXs) have shown substantial \gls{BLER} gains over
+classical channel estimation, equalization, and demapping in the
+emerging \gls{6G} and \gls{AI}-\gls{RAN} setting
+\cite{scamnrx,deeprx_mimo_icc}.
+A standard-compliant \gls{MU}-\gls{MIMO} receiver built on the
+architecture of \cite{scamnrx} further demonstrated real-time
+inference and support for dynamic \gls{MCS}
+\cite{wiesmayr2024design}.
+In parallel, model-based hybrid neural receivers retain classical
+signal-processing structure in order to reduce computational complexity
+and the number of learnable parameters \cite{mahdi_mdx}.
 
-{\gls{PTQ}} avoids retraining and compresses models by up to $8\times$, but can degrade at aggressive bit-widths and under distribution shifts characteristic of high‑Doppler channels. In prior work, a CNN‑based neural receiver with symmetric uniform {\gls{PTQ}} (per‑tensor and per‑channel) achieved near‑\texttt{float32} BLER at 8‑bit and competitive results at 4‑bit, establishing a strong baseline for efficient {\gls{PHY}} inference and motivating robustness analysis at low precision \cite{saketh_asilomar25,dfq,kuzmin2023pruning,simquant,yellapragada2025datafree}.
-In this paper, we examine whether {\gls{QAT}} closes the remaining gap by training with simulated quantizers, thereby improving the dependability of ultra‑low‑bit neural receivers across mobility and channel conditions.
+A distinctive advantage of learned receivers is that they can be
+adapted and fine-tuned to a deployment scenario, exploiting local
+channel propagation and radio-frequency (RF) hardware impairments.
+This has motivated recent site-specific neural receivers:
+finetuning on real-world 5G~NR measurements closes the sim-to-real gap
+\cite{nuri_reinhard_spawc}, while cell-site specialization has been shown to
+adapt a neural receiver to local propagation and RF conditions
+\cite{bell_labs}.
+These results place NRXs on a trajectory toward practical \gls{RAN}
+deployment, and shift the open question from \emph{whether} neural
+receivers can work to \emph{how} they can be inferred efficiently on
+\gls{GPU}-class accelerators or \gls{NPU}-based ASICs
+\cite{ran_accelerated_compute_reinhard}.
 
-\gls{QAT} integrates simulated quantizers into the training graph so the network learns to compensate for rounding and range effects, and is widely shown to preserve accuracy at 8-bit and enable viable 4-bit operation across diverse architectures and hardware back ends. Concretely, {\gls{QAT}} co-designs scale and rounding behavior with task loss, retaining integer-arithmetic-only inference paths at deployment time to meet edge latency and energy targets without sacrificing model quality. These properties make \gls{QAT} a natural fit for neural receivers operating under time and frequency-selective fading, where amplitude spikes and distribution shifts can otherwise erode \gls{PTQ} accuracy at ultra-low bit-widths. \par
+Quantization is a primary lever for that inference cost.
+Weight quantization reduces the memory footprint of the parameter
+store; activation quantization relieves the memory-bandwidth pressure
+of feature maps that dominate convolutional receivers.
+Integer \gls{QAT} of neural receivers has already been shown to
+preserve link-level performance at moderate bit widths
+\cite{saketh_qat}.
+This paper considers the state-of-the-art standard-compliant
+\gls{MU}-\gls{MIMO} architecture of
+\cite{scamnrx,wiesmayr2024design} under joint \gls{QAT} and
+pruning across ultra-low-bit integer and floating-point microformats,
+and quantifies why FP4~(E2M1) incurs a smaller \gls{BLER} penalty than
+the integer-only inference of \cite{saketh_qat} at the same bit width.
 
-This paper advances efficient neural receivers beyond \gls{PTQ} by developing a \gls{QAT} pipeline for convolutional \gls{PHY} receivers. The principles discussed in this paper should apply to any convolutional-ResNet architectures. We evaluate on 3GPP CDL\mbox{-}B/D channels across low, medium, and high UE speeds using Sionna, a hardware-accelerated differentiable link-level setup \cite{sionna}. 
-
-\paragraph*{Main contributions}
+\paragraph*{Contributions}
 \begin{itemize}
-
-  \item A joint weight--activation \gls{QAT} pipeline for a MU-\gls{MIMO} neural receiver, combining per-channel weight fake-quantization (INT/FP microformats) with INT8 asymmetric post-\gls{ReLU} activations, optionally followed by 50\% magnitude pruning.
-
-  \item A link-level evaluation on DoubleTDL-low showing that W8A8 / FP8+A8 matches weight-only and \texttt{FP32} within $0.05$\,dB at 10\% and 1\% \gls{BLER}, together with an analytic complexity model that quantifies real weight compression, activation traffic, and bit-operations on the evaluation graph.
-
+  \item A joint weight--activation \gls{QAT} pipeline for a
+        \gls{MU}-\gls{MIMO} neural receiver, combining per-channel
+        weight fake-quantization (INT8/INT4 and FP8/FP4) with INT8
+        asymmetric post-\gls{ReLU} activations, optionally followed by
+        $50\%$ magnitude pruning.
+  \item A 5G~NR \gls{PUSCH} evaluation on DoubleTDL-low showing that
+        W8A8 and FP8+A8 match the \texttt{FP32} receiver within
+        $0.05$\,dB at $10\%$ and $1\%$ \gls{BLER}; that FP4~(E2M1)
+        remains more robust than INT4  and classical LS-LMMSE under both activation quantization
+        and pruning; and an analytic complexity model of weight
+        compression, activation traffic, and bit-operations.
 \end{itemize}
