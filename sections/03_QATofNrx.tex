@@ -90,51 +90,36 @@ after every update. Weight-only, W$b$A8, and QAT$+$pruning checkpoints
 are compared in Section~\ref{sec:results}.
 
 \begin{algorithm}[t]
-\caption{QAT with optional INT8 activation quantization and magnitude
-pruning for a neural receiver.}
+\caption{Weight--activation QAT with optional magnitude pruning.}
 \label{alg:qat_prune}
 \footnotesize
 \begin{algorithmic}[1]
-\REQUIRE Pretrained \texttt{FP32} weights $\mathbf{W}$;
-         target grid $\mathcal{G}$ (INT8/INT4/FP8/FP4);
-         activation flag $A\!\in\!\{\mathrm{off},\mathrm{A8}\}$;
-         batch size $N_B$ (OFDM slots / step);
-         QAT budget $N_{\mathrm{QAT}}$; optional sparsity
-         $\rho\in[0,1)$ and prune budget $N_{\mathrm{P}}$
-\ENSURE Quantized (and optionally sparse) weights
-        $\mathbf{W}^{\star}$
-\STATE Insert per-channel abs-max fake-quantizers
-       \eqref{eq:fake_quant} on all CNN/MLP kernels
-\IF{$A=\mathrm{A8}$}
-  \STATE Insert INT8 asymmetric post-\gls{ReLU} fake-quantizers
-         \eqref{eq:act_fq}
-\ENDIF
+\REQUIRE \texttt{FP32} master weights $\mathbf{W}$; grid $\mathcal{G}$;
+         $A\in\{\mathrm{off},\mathrm{A8}\}$; $N_{\mathrm{QAT}}$;
+         optional $(\rho,N_{\mathrm{P}})$
+\STATE Let $f_A$ denote $f$ with $F_{\mathcal{G}}$
+       \eqref{eq:fake_quant} on all kernels and $Q_{\mathrm{A8}}$
+       \eqref{eq:act_fq} enabled if $A=\mathrm{A8}$
 \FOR{$t = 1$ \TO $N_{\mathrm{QAT}}$}
-  \STATE Sample $N_B$ OFDM slots
-         $(\mathbf{y},\mathbf{h},\mathbf{b})\!\sim\!\mathcal{D}$
-         (random users, UMi channels, $E_b/N_0$)
-  \STATE $\widehat{\mathbf{W}} \leftarrow
-         F_{\mathcal{G}}(\mathbf{W})$
-         \COMMENT{forward fake-quant}
-  \STATE $\hat{L},\hat{\mathbf{h}} \leftarrow
-         f(\mathbf{y};\,\widehat{\mathbf{W}})$
-         \COMMENT{activation fake-quant if A8}
-  \STATE Compute $\mathcal{L}(\mathbf{b},\hat{L},\hat{\mathbf{h}})$
-         via \eqref{eq:total_loss}; update $\mathbf{W}$ with
-         Adam + \gls{STE}
+  \STATE Sample $(\mathbf{y},\mathbf{h},\mathbf{b})
+         \sim\mathcal{D}^{N_B}$
+  \STATE $(\hat{L},\hat{\mathbf{h}})
+         \leftarrow f_A(\mathbf{y};F_{\mathcal{G}}(\mathbf{W}))$
+  \STATE Update $\mathbf{W}$ with Adam and \gls{STE} on
+         $\mathcal{L}(\mathbf{b},\hat{L},\hat{\mathbf{h}})$
 \ENDFOR
 \IF{$\rho > 0$}
-  \STATE Build global magnitude mask $\mathbf{M}$ at
-         sparsity $\rho$ on pointwise/dense kernels
-         \eqref{eq:prune_mask}; set
+  \STATE Build global mask $\mathbf{M}$ at sparsity $\rho$ on eligible kernels
+         \eqref{eq:prune_mask};
          $\mathbf{W}\leftarrow\mathbf{M}\odot\mathbf{W}$
   \FOR{$t = 1$ \TO $N_{\mathrm{P}}$}
-    \STATE Sample $N_B$ slots; fake-quant forward as above
-    \STATE Adam + \gls{STE} update; project
+    \STATE Sample a batch; apply the quantized forward pass and
+           Adam--\gls{STE} update
+    \STATE Project
            $\mathbf{W}\leftarrow\mathbf{M}\odot\mathbf{W}$
   \ENDFOR
 \ENDIF
-\STATE \textbf{return}
-       $\mathbf{W}^{\star}\leftarrow F_{\mathcal{G}}(\mathbf{W})$
+\STATE \textbf{return} $\mathbf{W}^{\star}
+       \leftarrow F_{\mathcal{G}}(\mathbf{W})$
 \end{algorithmic}
 \end{algorithm}

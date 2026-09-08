@@ -1,15 +1,27 @@
 \begin{abstract}
-Neural receivers improve \gls{BLER} over conventional MU-\gls{MIMO} detection, but inference cost is dominated by weight storage and activation traffic. This paper presents \gls{QAT} for a standard-compliant 5G~NR neural receiver that combines integer and floating-point weight microformats (INT8/INT4, FP8/FP4) with INT8 asymmetric post-\gls{ReLU} activations and optional 50\% magnitude pruning. On a dual-user DoubleTDL-low uplink, 8-bit weight-and-activation \gls{QAT} matches the weight-only and \texttt{FP32} receivers to within $0.05$\,dB at $10\%$ and $1\%$ \gls{BLER}. An analytic cost model indicates up to $16\times$ fewer bit-operations and $3.8\times$--$7.1\times$ real weight compression. At 4~bits, FP4~(E2M1) remains substantially more robust than INT4 under both activation quantization and pruning.
+Deploying neural receivers requires reducing their memory traffic and
+arithmetic cost without compromising link performance. We investigate
+joint weight--activation \gls{QAT} and magnitude pruning for a
+standard-compliant 5G~NR MU-\gls{MIMO} neural receiver. The evaluated
+configurations use INT8, INT4, FP8~(E4M3), or FP4~(E2M1) weights,
+INT8 asymmetric post-\gls{ReLU} activations, and optional $50\%$
+unstructured sparsity. On a dual-user DoubleTDL-low uplink, the 8-bit
+models remain within $0.05$\,dB of \texttt{FP32} at $10\%$ and $1\%$
+\gls{BLER}; an analytic cost model yields up to $16\times$ fewer
+bit-operations and $3.8\times$--$7.1\times$ real weight compression.
+At 4~bits, FP4 incurs an approximately $1.3$\,dB gap to \texttt{FP32}
+and outperforms LS--LMMSE at both \gls{BLER} targets, before and after
+$50\%$ pruning, whereas INT4 degrades sharply.
 \end{abstract}
 
 %
 \begin{keywords}
-Deep Learning, Neural Receivers, quantization-aware training, activation quantization, resource-efficient machine learning
+Neural receivers, MU-MIMO, quantization-aware training, FP4, pruning
 \end{keywords}
 
 %
 \begin{comment}
     for IEEE submission portal :
-Neural receivers improve Block Error Rate (BLER) over conventional MU-MIMO detection, but inference cost is dominated by weight storage and activation traffic. This paper presents Quantization-Aware Training (QAT) for a standard-compliant 5G NR neural receiver that combines integer and floating-point weight microformats (INT8/INT4, FP8/FP4) with INT8 asymmetric post-ReLU activations and optional 50% magnitude pruning. On a dual-user DoubleTDL-low uplink, 8-bit weight-and-activation QAT matches the weight-only and FP32 receivers to within 0.05 dB at 10% and 1% BLER. An analytic cost model indicates up to 16× fewer bit-operations and 3.8×--7.1× real weight compression. At 4 bits, FP4 (E2M1) remains substantially more robust than INT4 under both activation quantization and pruning.
+Deploying neural receivers requires reducing their memory traffic and arithmetic cost without compromising link performance. We investigate joint weight-activation Quantization-Aware Training (QAT) and magnitude pruning for a standard-compliant 5G NR Multi-User Multiple-Input Multiple-Output (MU-MIMO) neural receiver. The evaluated configurations use INT8, INT4, FP8 (E4M3), or FP4 (E2M1) weights, INT8 asymmetric post-ReLU activations, and optional 50% unstructured sparsity. On a dual-user DoubleTDL-low uplink, the 8-bit models remain within 0.05 dB of FP32 at 10% and 1% Block Error Rate (BLER); an analytic cost model yields up to 16× fewer bit-operations and 3.8×--7.1× real weight compression. At 4 bits, FP4 incurs an approximately 1.3 dB gap to FP32 and outperforms least-squares linear minimum mean-squared error (LS-LMMSE) at both BLER targets, before and after 50% pruning, whereas INT4 degrades sharply.
 \end{comment}
 %

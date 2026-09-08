@@ -83,95 +83,51 @@ warm-start from that checkpoint.
 
 \subsection{Weight Fake Quantization}
 \label{sec:fake_quant}
-\gls{QAT} inserts a fake-quantization operator in the forward pass so
-that the network experiences the same rounding and clipping noise that
-low-precision inference will induce, while gradients update a
-full-precision master copy of the weights
-\cite{quantization_whitepaper,wu2020integer,jacob2018quantization}.
 Let $\mathbf{W}$ denote a kernel (convolutional or dense) and let
 $\mathcal{G}\subset\mathbb{R}$ be a finite quantization grid with
 maximum magnitude $g_{\max}=\max_{g\in\mathcal{G}}|g|$. We use
 \emph{per-channel abs-max} scaling along the output-channel axis:
-for each output channel $c$,
-\begin{equation}
-\label{eq:absmax_scale}
-  s_c = \frac{\max_{i}\,|W_{i,c}|}{g_{\max}},
-\end{equation}
-and the fake-quantized weight is
-\begin{equation}
-\label{eq:fake_quant}
+\begin{align}
+  s_c &= \frac{\max_{i}\,|W_{i,c}|}{g_{\max}},
+  \label{eq:absmax_scale}\\
   \widehat{W}_{i,c}
-  = s_c\cdot\mathrm{round}_{\mathcal{G}}\!\bigl(W_{i,c}/s_c\bigr),
-\end{equation}
+  &=s_c\cdot\mathrm{round}_{\mathcal{G}}\!\bigl(W_{i,c}/s_c\bigr).
+  \label{eq:fake_quant}
+\end{align}
 where $\mathrm{round}_{\mathcal{G}}(\cdot)$ maps to the nearest
-element of $\mathcal{G}$. Scales $s_c$ are recomputed from the live
-weights on every forward pass (no frozen calibration set). Biases
-remain in \texttt{FP32}.
+element of $\mathcal{G}$.
 
-For integer \gls{QAT} with bit-width $b\in\{4,8\}$ we use a symmetric
-narrow-range grid
-\begin{equation}
-\label{eq:int_grid}
-  \mathcal{G}_{\mathrm{INT},b}
-  = \bigl\{-(2^{b-1}-1),\ldots,2^{b-1}-1\bigr\},
-\end{equation}
-so $g_{\max}=2^{b-1}-1$ and \eqref{eq:fake_quant} reduces to uniform
-symmetric quantization with $2^{b}-1$ reconstruction levels
-\cite{krishnamoorthi2018quantizing,wu2020integer}.
-
-Because rounding is non-differentiable, the backward pass employs the
-\gls{STE} \cite{bengio2013estimating,understanding_STE}, which
-approximates
-\begin{equation}
-\label{eq:ste}
-  \frac{\partial\widehat{W}}{\partial W} \approx \mathbf{I}
-\end{equation}
-(for integer grids, gradients outside the abs-max clip range are
-additionally zeroed). Weight updates are therefore applied to the
-full-precision master $\mathbf{W}$, while every subsequent forward
-pass re-quantizes through \eqref{eq:fake_quant}. The resulting
-training objective is the task loss evaluated under simulated
-quantization,
-\begin{equation}
-\label{eq:qat_objective}
-  \min_{\mathbf{W}}\;
-  \mathbb{E}_{(\mathbf{y},\mathbf{b})\sim\mathcal{D}}
-  \Bigl[
-    \mathcal{L}\bigl(\mathbf{b},\,
-    f(\mathbf{y};\,\widehat{\mathbf{W}})\bigr)
-  \Bigr],
-\end{equation}
-where $\mathbf{y}$ is the received post-\gls{FFT} slot, $\mathbf{b}$
-are the coded bits, $f(\cdot;\widehat{\mathbf{W}})$ is the neural
-receiver with fake-quantized kernels, and $\mathcal{D}$ is the
-training distribution of Section~\ref{sec:loss}.
+We follow the weight-\gls{QAT} procedure of \cite{saketh_qat}:
+fake-quantized weights are used in the forward pass, and an \gls{STE}
+updates a full-precision master copy. We replace its learned clipping
+bounds with the live per-channel scale \eqref{eq:absmax_scale}. There,
+jointly trained clipping bounds could contract the represented range,
+and 8-bit \gls{QAT} retained a gap relative to abs-max \gls{PTQ}.
+Fixing the scale to the channel extrema removes that degree of freedom
+while covering the full dynamic range. Unlike abs-max \gls{PTQ}
+\cite{saketh_asilomar25}, which quantizes a frozen \texttt{FP32}
+checkpoint once, \eqref{eq:absmax_scale} is recomputed from the current
+master weights at every training step; the weights can therefore adapt
+to rounding and, for floating-point grids, nonuniform reconstruction
+levels. Biases remain in \texttt{FP32}. For INT$b$,
+$b\in\{4,8\}$, we use the symmetric narrow-range grid with
+$g_{\max}=2^{b-1}-1$.
 
 \subsection{Floating-Point Microformats: FP8 and FP4}
 \label{sec:fp_micro}
-Low-bit floating-point formats allocate a non-uniform grid that
-preserves dynamic range near zero, which matches the typically
-heavy-tailed histograms of trained convolutional kernels
-\cite{micikevicius2022fp8,rouhani2023microscaling}. We consider two
-element formats standardized in the Open Compute Project (OCP)
-microscaling family \cite{ocp2023mx}.
-
-\textbf{FP8~(E4M3).}
-An E4M3 value comprises one sign bit, four exponent bits, and three
-mantissa bits. Following the OCP specification
-\cite{micikevicius2022fp8,ocp2023mx}, the finite grid
-has maximum magnitude $g_{\max}=448$. Relative to INT8, E4M3 provides
-a comparable bit budget with non-uniform spacing that better covers
-large dynamic ranges.
-
-\textbf{FP4~(E2M1).}
-An E2M1 value comprises one sign bit, two exponent bits, and one
-mantissa bit, yielding the fifteen finite levels
+Unlike uniform integer grids, low-bit floating-point formats allocate
+resolution nonuniformly, with denser levels near zero and wider dynamic
+range \cite{micikevicius2022fp8,rouhani2023microscaling}. We use the
+OCP E4M3 and E2M1 element formats \cite{ocp2023mx}. FP8~(E4M3) assigns
+one sign, four exponent, and three mantissa bits, with maximum finite
+magnitude $g_{\max}=448$. FP4~(E2M1) assigns one sign, two exponent,
+and one mantissa bit, yielding the fifteen-level grid
 \begin{equation}
 \label{eq:fp4_grid}
   \mathcal{G}_{\mathrm{E2M1}}
   = \{0,\pm0.5,\pm1,\pm1.5,\pm2,\pm3,\pm4,\pm6\},
 \end{equation}
-with $g_{\max}=6$. At identical nominal $8\times$ weight compression,
-E2M1 is a coarser but non-uniform alternative to INT4; both formats
-use the same abs-max scaling \eqref{eq:absmax_scale} and
-STE \eqref{eq:ste} during \gls{QAT}.
+where $g_{\max}=6$. E2M1 and INT4 both provide nominal $8\times$
+weight compression relative to \texttt{FP32}, but differ in grid
+spacing. All formats use the same abs-max scaling
+\eqref{eq:absmax_scale} and \gls{STE} during \gls{QAT}.
