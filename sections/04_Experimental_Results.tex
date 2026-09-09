@@ -13,7 +13,9 @@
 
 \begin{table}[t]
 \centering
-\caption{System, training, and evaluation parameters.}
+\caption{System, training, and evaluation parameters.
+Optimizer rows list two sequential Adam phases as
+step count and learning rate.}
 \label{tab:sim_params}
 \footnotesize
 \begin{tabular}{ll}
@@ -25,7 +27,8 @@ Rx antennas $B$ & 4 \\
 Carrier / SCS & 2.14\,GHz / 30\,kHz \\
 OFDM symbols / slot & 14 \\
 PRBs (train / eval) & 4 / 132 \\
-MCS (Table~1 \cite{3gpp38214}) & index 14 (16-QAM, $R\approx0.48$) \\
+MCS / code rate $R$ (Table~1 \cite{3gpp38214})
+  & index 14 / $R\approx0.48$ (16-QAM) \\
 DMRS & type~1, mapping~A, +1 position \\
 Channel (train) & 3GPP UMi, speeds $[0,56]$\,m/s \\
 Channel (eval) & DoubleTDL-low \cite{scamnrx}: \\
@@ -33,10 +36,10 @@ Channel (eval) & DoubleTDL-low \cite{scamnrx}: \\
  & UE2 TDL-C300/100 ($300$\,ns, $100$\,Hz) \\
 NRX depth $N_{\mathrm{it}}$ / state width $d_s$ & 8 / 56 \\
 Batch $N_B$ (slots / step) & 128 \\
-FP8/FP4 QAT & $5{\times}10^{4}+2{\times}10^{5}$ at $10^{-4}$, $5{\times}10^{-5}$ \\
-INT8/INT4 QAT & $10^{6}+9{\times}10^{6}$ at $10^{-4}$ \\
-W$b$A8 fine-tune & $5{\times}10^{4}+10^{5}$ at $10^{-4}$, $5{\times}10^{-5}$ \\
-Prune recovery & $5{\times}10^{3}+10^{4}$ at $5{\times}10^{-5}$, $2{\times}10^{-5}$ \\
+FP8/FP4 QAT & $5{\times}10^{4}$ at $10^{-4}$, then $2{\times}10^{5}$ at $5{\times}10^{-5}$ \\
+INT8/INT4 QAT & $10^{6}$ then $9{\times}10^{6}$ steps, both at $10^{-4}$ \\
+W$b$A8 fine-tune & $5{\times}10^{4}$ at $10^{-4}$, then $10^{5}$ at $5{\times}10^{-5}$ \\
+Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$, then $10^{4}$ at $2{\times}10^{-5}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -73,9 +76,8 @@ In this section, we evaluate the proposed neural receiver under a joint
 compression stack: weight \gls{QAT} at FP8~(E4M3), INT8, FP4~(E2M1), and
 INT4; INT8 asymmetric post-\gls{ReLU} activation quantization (W$b$A8);
 and 50\% magnitude pruning on the QAT weights. Evaluation uses the
-3GPP-compliant two-user PUSCH setup of Table~\ref{tab:sim_params},
-following Algorithm~\ref{alg:qat_prune} with the optimizer budgets
-listed there.
+3GPP-compliant two-user PUSCH setup and optimizer budgets in
+Table~\ref{tab:sim_params}.
 We report \gls{BLER} versus rate-adjusted $E_b/N_0$ at the $10\%$ and
 $1\%$ operating points. All quantized and pruned receivers are compared
 against the full-precision (\texttt{FP32}) neural receiver, LS channel
@@ -118,7 +120,8 @@ W$b$A8.
 After the same per-channel abs-max normalization used in \gls{QAT}
 \eqref{eq:absmax_scale}, the $404{,}224$ trained \texttt{FP32}
 pointwise and dense weights have excess kurtosis $3.97$
-(Fig.~\ref{fig:weight_hist}). Of these, $65\%$ lie below the first
+(Fig.~\ref{fig:weight_hist}). Let $w$ denote one such normalized
+weight. Of these weights, $65\%$ lie below the first
 nonzero INT4 magnitude ($1/7\approx0.14$), while FP4 adds a level at
 $1/12\approx0.08$. The interval $|w|\leq0.25$ contains $79\%$ of the
 weights but only two INT4 magnitudes, including zero, versus four FP4

@@ -12,17 +12,24 @@ compression stack, are specified in Section~\ref{sec:nrx_qat}.
 \label{sec:system_model}
 $U$ single-layer \glspl{UE} share the same time--frequency resources
 toward a base station with $B$ antennas. After OFDM demodulation, each
-resource element $(s,t)$ observes
+resource element at subcarrier $s$ and OFDM symbol $t$ observes
 \begin{equation}
 \label{eq:mu_mimo}
   \mathbf{y}_{s,t}
   = \sum_{u=1}^{U}
-    \mathbf{H}_{s,t,u}\,\mathbf{x}_{s,t,u}
+    \mathbf{H}_{s,t,u}\,x_{s,t,u}
     + \mathbf{n}_{s,t},
   \qquad
-  \mathbf{n}_{s,t}\sim\mathcal{CN}(\mathbf{0},N_0\mathbf{I}),
+  \mathbf{n}_{s,t}\sim\mathcal{CN}(\mathbf{0},N_0\mathbf{I}_B),
 \end{equation}
-with $\mathbf{y}_{s,t}\in\mathbb{C}^{B}$. Payload bits are
+where $u$ indexes the \glspl{UE},
+$x_{s,t,u}\in\mathbb{C}$ is the transmitted symbol,
+$\mathbf{H}_{s,t,u}\in\mathbb{C}^{B}$ is its channel vector, and
+$\mathbf{y}_{s,t},\mathbf{n}_{s,t}\in\mathbb{C}^{B}$ are the received
+and noise vectors. Here, $\mathcal{CN}$ denotes a circularly symmetric
+complex Gaussian distribution, $N_0$ is the noise variance per receive
+component, and $\mathbf{I}_B$ is the $B$-dimensional identity matrix.
+Payload bits are
 \gls{LDPC}-encoded and mapped to \gls{QAM} symbols; known
 \gls{DMRS} tones enable an initial least-squares channel estimate.
 The neural receiver consumes the full post-\gls{FFT} slot (data and
@@ -51,15 +58,16 @@ uses width $128$.
 \subsection{Loss and Training Schedule}
 \label{sec:loss}
 Training is driven by bit-metric decoding quality with an auxiliary
-channel estimate. If $B$ denotes the coded bits on data tones,
-$\hat{L}$ the predicted \glspl{LLR}, and $\hat{\mathbf{h}}$ a
-refined channel from a second readout, we minimize
+channel estimate. Let $b\in\{0,1\}$ denote a coded data bit,
+$\hat{L}$ its predicted \gls{LLR}, and $\mathbf{h}$ and
+$\hat{\mathbf{h}}$ the true and auxiliary channel vectors,
+respectively. We minimize
 \begin{align}
 \label{eq:bce}
   \mathcal{L}_{\mathrm{BCE}}
   &= -\mathbb{E}\!\left[
-       B\log\sigma(\hat{L})
-       +(1-B)\log\!\bigl(1-\sigma(\hat{L})\bigr)
+       b\log\sigma(\hat{L})
+       +(1-b)\log\!\bigl(1-\sigma(\hat{L})\bigr)
      \right], \\
 \label{eq:mse}
   \mathcal{L}_{\mathrm{MSE}}
@@ -71,12 +79,15 @@ refined channel from a second readout, we minimize
   &= \mathcal{L}_{\mathrm{BCE}}
      + \lambda\,\mathcal{L}_{\mathrm{MSE}},
 \end{align}
-with $\sigma$ the sigmoid. Both terms are summed over all
+where $\mathbb{E}$ averages over data bits and channel realizations,
+$\sigma$ is the sigmoid, and $\lambda>0$ weights the auxiliary loss.
+Both loss terms are summed over all
 $N_{\mathrm{it}}$ unrolled receiver iterations, and $\lambda$ decays
 from $0.02$ to $0.01$ across two schedule phases. Each optimizer step
 draws a mini-batch of $N_B{=}128$ independently simulated OFDM
 slots in Sionna \cite{sionna}, with random active-user counts,
-velocities in $[0,56]$\,m/s, and rate-adjusted $E_b/N_0$ in a
+velocities in $[0,56]$\,m/s, and rate-adjusted bit-energy-to-noise
+ratio $E_b/N_0$ in a
 phase-dependent window of approximately $0$--$15$\,dB. The
 \texttt{FP32} baseline is trained with Adam; quantized models
 warm-start from that checkpoint.
@@ -87,6 +98,8 @@ Let $\mathbf{W}$ denote a kernel (convolutional or dense) and let
 $\mathcal{G}\subset\mathbb{R}$ be a finite quantization grid with
 maximum magnitude $g_{\max}=\max_{g\in\mathcal{G}}|g|$. We use
 \emph{per-channel abs-max} scaling along the output-channel axis:
+indices $c$ and $i$ denote an output channel and a coefficient within
+that channel, respectively.
 \begin{align}
   s_c &= \frac{\max_{i}\,|W_{i,c}|}{g_{\max}},
   \label{eq:absmax_scale}\\

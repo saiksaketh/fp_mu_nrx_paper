@@ -1,13 +1,15 @@
 \begin{table}[t]
 \centering
 \caption{Analytic complexity per 5G~NR slot (132~PRB, 2~users,
-8 iterations). Weights include biases, scales, and a sparse bitmask.}
+8 iterations). W/A denotes weight/activation bit widths, and P denotes
+pruning at $\rho=50\%$. Weights include biases, scales, and the sparse
+bitmask.}
 \label{tab:complexity}
 \footnotesize
 \setlength{\tabcolsep}{3.5pt}
 \begin{tabular}{@{}lcccc@{}}
 \toprule
-Config. & W/A & Spars. & Wt.\ (KiB)  & BOPs (T) \\
+Config. & W/A & Spars. & Wt.\ (KiB)  & BOPs ($10^{12}$) \\
 \midrule
 FP32        & 32/32 & --   & 1708.5  & 19.7 \\
 FP16        & 16/16 & --   &  862.1  &  4.9 \\

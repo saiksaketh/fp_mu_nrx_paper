@@ -1,101 +1,49 @@
 \section{Proposed Quantization-Aware MU-MIMO Neural Receiver}
 \label{sec:nrx_qat}
 
-This section specifies how the CGNN of Section~\ref{sec:architecture}
-is quantized and, optionally, sparsified. We apply per-channel weight
-\gls{QAT} in INT8, INT4, FP8~(E4M3), and FP4~(E2M1), INT8 asymmetric
-fake-quantization of post-\gls{ReLU} activations, and optional 50\%
-unstructured magnitude pruning, without modifying the computational
-graph. The objective is to reduce weight storage and activation
-traffic while preserving link-level \gls{BLER}.
-
 \subsection{Weight and Activation Quantization}
 \label{sec:act_quant}
 Every convolutional and dense kernel---depthwise, pointwise,
-aggregation, and readout---is passed through the fake-quantizer
-\eqref{eq:fake_quant} in INT8, INT4, FP8~(E4M3), or FP4~(E2M1). Among
-4-bit exponent--mantissa allocations we use E2M1, the sole FP4 element
-format of the OCP MXFP4 specification \cite{ocp2023mx}, rather than an
-ad hoc 4-bit grid. Biases and linear (non-\gls{ReLU}) tensors remain
-in \texttt{FP32}.
-
-After each \gls{ReLU} the activation tensor is nonnegative, so we apply
-\emph{asymmetric} uniform INT8 fake-quantization over the per-tensor
-range $[0,\max(\mathbf{a})]$:
-\begin{equation}
-\label{eq:act_fq}
-  \widehat{\mathbf{a}}
-  = Q_{\mathrm{INT8}}^{\mathrm{asym}}(\mathbf{a}),
-  \qquad
-  \mathbf{a}=\mathrm{ReLU}(\cdot).
-\end{equation}
-Linear layers (residual state, aggregation outputs, and LLR /
-channel-estimate heads) and the network input remain in
-\texttt{FP32}; only post-\gls{ReLU} feature maps are quantized. This
-matches integer inference paths that keep unsigned activations after
-\gls{ReLU} while preserving full-precision residuals
-\cite{jacob2018quantization,wu2020integer}. During \gls{QAT},
-\eqref{eq:act_fq} is composed with \eqref{eq:fake_quant}, so the
-network jointly adapts to weight and activation noise. We denote such
-models by W$b$A8 (weight bit-width $b$, INT8 activations). Weight
-quantization reduces the parameter store; activation quantization
-reduces the dominant on-chip traffic of feature maps
-\cite{micikevicius2022fp8,jacob2018quantization}.
+aggregation, and readout---uses \eqref{eq:fake_quant} with the INT8,
+INT4, FP8~(E4M3) \cite{micikevicius2022fp8}, or FP4~(E2M1) grids of
+Section~\ref{sec:qat_pruning}; biases remain in \texttt{FP32}. For a
+post-\gls{ReLU} activation tensor $\mathbf{a}$, nonnegativity allows
+unsigned asymmetric INT8 to use all 256 codes over
+$[0,\max(\mathbf{a})]$, with per-tensor scale
+$\Delta_a=\max(\mathbf{a})/255$ \cite{jacob2018quantization}.
+Network inputs, residual states, aggregation outputs, and LLR/channel
+heads remain in \texttt{FP32}. Applying weight and activation
+fake-quantization in the same forward pass allows adaptation to both
+noise sources; W$b$A8 denotes weight precision $b$ with INT8
+post-\gls{ReLU} activations.
 
 \subsection{Unstructured Magnitude Pruning}
 \label{sec:pruning}
-After a converged \gls{QAT} checkpoint, let $\mathcal{T}$ collect the
-eligible tensors (separable-convolution \emph{pointwise} kernels and
-aggregation/dense kernels; depthwise kernels and the LLR readout are
-left dense). A global threshold $\tau$ is chosen so that a target
-fraction $\rho$ of coefficients in $\mathcal{T}$ satisfy $|w|<\tau$
-\cite{song_han_1,kuzmin2023pruning}. With a binary keep-mask
-$\mathbf{M}$ of matching shape,
+After weight \gls{QAT} converges, global magnitude pruning is applied
+to pointwise-convolution and aggregation/dense kernels; depthwise
+kernels and the LLR readout remain dense
+\cite{song_han_1,kuzmin2023pruning}. Let $\mathcal{T}$ be this
+eligible coefficient set, $W_i$ its $i$th coefficient, and $M_i$ the
+corresponding binary keep-mask entry. A global threshold $\tau$ sets
+sparsity $\rho$ through
 \begin{equation}
 \label{eq:prune_mask}
-  W^{\mathrm{pr}}_{i}
-  = M_{i}\,W_{i},
-  \qquad
-  M_{i}=\mathds{1}_{\{|W_{i}|\ge\tau\}},
+  M_i=\mathds{1}_{\{|W_i|\ge\tau\}},\qquad
+  W_i^{\mathrm{pr}}=M_iW_i .
 \end{equation}
-we obtain unstructured sparsity with unchanged tensor shapes. In our
-experiments $\rho=50\%$. The pruned model is then fine-tuned under
-\eqref{eq:fake_quant}, with hard projection onto $\mathbf{M}$ after
-each optimizer step so that pruned coordinates remain zero.
-Algorithm~\ref{alg:qat_prune} states the staged pipeline; optimizer
-budgets are reported in Table~\ref{tab:sim_params}.
+Here,
+$\rho=|\{i\in\mathcal{T}:|W_i|<\tau\}|/|\mathcal{T}|$ is the fraction
+of eligible coefficients removed by the global threshold. We use
+$\rho=50\%$ and hold $\mathbf{M}$ fixed during recovery
+fine-tuning by projecting
+$\mathbf{W}\leftarrow\mathbf{M}\odot\mathbf{W}$ after every update,
+where $\odot$ denotes element-wise multiplication.
 
-\begin{algorithm}[t]
-\caption{Weight--activation QAT with optional magnitude pruning.}
-\label{alg:qat_prune}
-\footnotesize
-\begin{algorithmic}[1]
-\REQUIRE \texttt{FP32} master weights $\mathbf{W}$; grid $\mathcal{G}$;
-         $A\in\{\mathrm{off},\mathrm{A8}\}$; $N_{\mathrm{QAT}}$;
-         optional $(\rho,N_{\mathrm{P}})$
-\STATE Let $f_A$ denote $f$ with $F_{\mathcal{G}}$
-       \eqref{eq:fake_quant} on all kernels and $Q_{\mathrm{A8}}$
-       \eqref{eq:act_fq} enabled if $A=\mathrm{A8}$
-\FOR{$t = 1$ \TO $N_{\mathrm{QAT}}$}
-  \STATE Sample $(\mathbf{y},\mathbf{h},\mathbf{b})
-         \sim\mathcal{D}^{N_B}$
-  \STATE $(\hat{L},\hat{\mathbf{h}})
-         \leftarrow f_A(\mathbf{y};F_{\mathcal{G}}(\mathbf{W}))$
-  \STATE Update $\mathbf{W}$ with Adam and \gls{STE} on
-         $\mathcal{L}(\mathbf{b},\hat{L},\hat{\mathbf{h}})$
-\ENDFOR
-\IF{$\rho > 0$}
-  \STATE Build global mask $\mathbf{M}$ at sparsity $\rho$ on eligible kernels
-         \eqref{eq:prune_mask};
-         $\mathbf{W}\leftarrow\mathbf{M}\odot\mathbf{W}$
-  \FOR{$t = 1$ \TO $N_{\mathrm{P}}$}
-    \STATE Sample a batch; apply the quantized forward pass and
-           Adam--\gls{STE} update
-    \STATE Project
-           $\mathbf{W}\leftarrow\mathbf{M}\odot\mathbf{W}$
-  \ENDFOR
-\ENDIF
-\STATE \textbf{return} $\mathbf{W}^{\star}
-       \leftarrow F_{\mathcal{G}}(\mathbf{W})$
-\end{algorithmic}
-\end{algorithm}
+\subsection{Training Protocol}
+Weight-only \gls{QAT} warm-starts from the pretrained \texttt{FP32}
+checkpoint following \cite{saketh_qat}. Each W$b$A8 model is
+initialized from its corresponding weight-only checkpoint and
+fine-tuned with both fake-quantizers active. Sparse models are formed
+after weight \gls{QAT} and undergo fixed-mask recovery fine-tuning.
+Batch sizes, iteration budgets, and learning rates are listed in
+Table~\ref{tab:sim_params}.
