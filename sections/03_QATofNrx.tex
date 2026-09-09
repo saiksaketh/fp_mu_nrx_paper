@@ -62,32 +62,8 @@ we obtain unstructured sparsity with unchanged tensor shapes. In our
 experiments $\rho=50\%$. The pruned model is then fine-tuned under
 \eqref{eq:fake_quant}, with hard projection onto $\mathbf{M}$ after
 each optimizer step so that pruned coordinates remain zero.
-
-\subsection{QAT and Pruned Fine-Tuning}
-\label{sec:qat_protocol}
-Algorithm~\ref{alg:qat_prune} summarizes the pipeline. Every forward
-pass evaluates the receiver on $N_B$ OFDM slots under fake-quantized
-weights \eqref{eq:fake_quant} and, for W$b$A8 models, post-\gls{ReLU}
-fake-quantization \eqref{eq:act_fq}; the \gls{STE} updates the
-full-precision master copy. Weight-only checkpoints warm-start the
-matching W$b$A8 fine-tunes. Optional magnitude pruning is applied only
-after weight \gls{QAT} has converged, followed by a short masked
-recovery fine-tune.
-
-All stages use $N_B{=}128$ slots per optimizer step. FP8~(E4M3) and
-FP4~(E2M1) \gls{QAT} run for
-$N_{\mathrm{QAT}}=5{\times}10^{4}+2{\times}10^{5}$ iterations at
-learning rates $10^{-4}$ then $5{\times}10^{-5}$
-($3.2{\times}10^{7}$ simulated slots); INT8/INT4 use
-$N_{\mathrm{QAT}}=10^{6}+9{\times}10^{6}$ iterations at $10^{-4}$
-($1.28{\times}10^{9}$ slots). W$b$A8 fine-tunes continue from the
-parent checkpoint under joint weight-and-activation fake-quantization
-with the same optimizer schedule. Post-prune recovery uses
-$N_{\mathrm{P}}=5{\times}10^{3}+10^{4}$ iterations at
-$5{\times}10^{-5}$ then $2{\times}10^{-5}$
-($1.92{\times}10^{6}$ additional slots), with hard mask projection
-after every update. Weight-only, W$b$A8, and QAT$+$pruning checkpoints
-are compared in Section~\ref{sec:results}.
+Algorithm~\ref{alg:qat_prune} states the staged pipeline; optimizer
+budgets are reported in Table~\ref{tab:sim_params}.
 
 \begin{algorithm}[t]
 \caption{Weight--activation QAT with optional magnitude pruning.}
