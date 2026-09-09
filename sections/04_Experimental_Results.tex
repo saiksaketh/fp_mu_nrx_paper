@@ -5,7 +5,6 @@
 % Figure assets:
 %   campaign_su_mu_20260809-080711/figures/mu_tdllow/bler_qat_activation.pdf
 %   campaign_su_mu_20260802-134343/figures/mu_tdllow/bler_qat_pruned.pdf
-%   insight_fp4_sparsity/figures/weight_histogram_signed.pdf
 %   insight_fp4_sparsity/figures/weight_histogram_zoom.pdf
 %   insight_fp4_sparsity/figures/sparsity_bars.pdf
 
@@ -117,39 +116,24 @@ uniform integer grid. The same FP4--INT4 ordering is preserved under
 W$b$A8.
 
 After the same per-channel abs-max normalization used in \gls{QAT}
-\eqref{eq:absmax_scale}, the trained \texttt{FP32} pointwise and dense
-kernels are strongly leptokurtic
-(Figs.~\ref{fig:weight_hist} and~\ref{fig:weight_hist_zoom}). Extra
-E2M1 reconstruction levels near zero cover the body of the histogram
-that a uniform INT4 grid leaves unresolved. Because \gls{QAT} can
-adapt weights only onto the available grid, the non-uniform E2M1
-spacing is better matched to this coefficient distribution.
-
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=\columnwidth]{insight_fp4_sparsity/figures/weight_histogram_signed.pdf}
-    \caption{Per-channel abs-max normalized histogram of the
-    $404{,}224$ trained \texttt{FP32} pointwise and dense kernels
-    (excess kurtosis $3.97$). Each weight is scaled by its
-    output-channel maximum so both 4-bit grids occupy $[-1,1]$,
-    matching \gls{QAT} \eqref{eq:absmax_scale}. Ticks mark the
-    reconstruction levels of INT4 (uniform) and FP4~(E2M1) (denser
-    near zero).}
-    \label{fig:weight_hist}
-\end{figure}
+\eqref{eq:absmax_scale}, the $404{,}224$ trained \texttt{FP32}
+pointwise and dense weights have excess kurtosis $3.97$
+(Fig.~\ref{fig:weight_hist}). Of these, $65\%$ lie below the first
+nonzero INT4 magnitude ($1/7\approx0.14$), while FP4 adds a level at
+$1/12\approx0.08$. The interval $|w|\leq0.25$ contains $79\%$ of the
+weights but only two INT4 magnitudes, including zero, versus four FP4
+magnitudes ($0$, $0.08$, $0.17$, and $0.25$). The E2M1 grid therefore
+resolves the body of the distribution more finely, allowing
+\gls{QAT} to adapt weights to levels unavailable under uniform INT4.
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=\columnwidth]{insight_fp4_sparsity/figures/weight_histogram_zoom.pdf}
-    \caption{Count histogram of the same kernels as
-    Fig.~\ref{fig:weight_hist}, folded to $|w|$ and zoomed to the peak.
-    The shaded band is $|w|<0.14$ (the first nonzero INT4 step) and
-    holds 65\% of all weights; FP4 places an extra level at $0.08$
-    inside that band. In $|w|<0.25$ (79\% of weights) INT4 has two
-    representable values including zero, FP4 has four
-    ($0$, $0.08$, $0.17$, $0.25$). Uniform INT4 therefore allocates
-    seven of its fourteen nonzero codepoints to a nearly empty tail.}
-    \label{fig:weight_hist_zoom}
+    \caption{Count histogram of per-channel abs-max normalized
+    \texttt{FP32} weight magnitudes, zoomed to $|w|\leq0.4$.
+    Shading marks the region below the first nonzero INT4 level;
+    ticks show the normalized INT4 and FP4~(E2M1) grids.}
+    \label{fig:weight_hist}
 \end{figure}
 
 \subsection{QAT with Magnitude Pruning}
@@ -178,7 +162,7 @@ residual-path coefficients. On the same layers, FP4 sparsity is
 comparable to INT8, indicating that the 4-bit microformat preserves a
 magnitude profile that the global threshold does not thin
 disproportionately. Combined with the coarse INT4 body grid of
-Figs.~\ref{fig:weight_hist} and~\ref{fig:weight_hist_zoom}, this
+Fig.~\ref{fig:weight_hist}, this
 accounts for the \gls{BLER} degradation of pruned INT4, whereas
 pruned FP4 remains within $0.1$\,dB of unpruned FP4.
 
