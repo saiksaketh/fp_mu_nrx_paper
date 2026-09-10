@@ -9,7 +9,7 @@ weight compression and up to $16\times$ fewer bit-operations per slot
 (Table~\ref{tab:complexity}). At 4~bits, FP4~(E2M1) limits the gap to
 \texttt{FP32} to approximately $1.3$\,dB and remains superior to
 \gls{LS}--\gls{LMMSE}, whereas INT4 does not; the difference is
-consistent with the leptokurtic kernel histogram
+consistent with the concentration of normalized weights near zero
 (Fig.~\ref{fig:weight_hist}). The same
 ordering holds after 50\% pruning
 (Fig.~\ref{fig:sparsity_layers}). The evaluation is restricted to

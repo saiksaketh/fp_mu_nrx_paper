@@ -18,7 +18,8 @@ Optimizer rows list two sequential Adam phases as
 step count and learning rate.}
 \label{tab:sim_params}
 \footnotesize
-\begin{tabular}{ll}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}p{0.44\columnwidth}p{0.50\columnwidth}@{}}
 \toprule
 Parameter & Value \\
 \midrule
@@ -36,10 +37,10 @@ Channel (eval) & DoubleTDL-low \cite{scamnrx}: \\
  & UE2 TDL-C300/100 ($300$\,ns, $100$\,Hz) \\
 NRX depth $N_{\mathrm{it}}$ / state width $d_s$ & 8 / 56 \\
 Batch $N_B$ (slots / step) & 128 \\
-FP8/FP4 QAT & $5{\times}10^{4}$ at $10^{-4}$, then $2{\times}10^{5}$ at $5{\times}10^{-5}$ \\
-INT8/INT4 QAT & $10^{6}$ then $9{\times}10^{6}$ steps, both at $10^{-4}$ \\
-W$b$A8 fine-tune & $5{\times}10^{4}$ at $10^{-4}$, then $10^{5}$ at $5{\times}10^{-5}$ \\
-Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$, then $10^{4}$ at $2{\times}10^{-5}$ \\
+FP8/FP4 QAT & $5{\times}10^{4}$ at $10^{-4}$; then $2{\times}10^{5}$ at $5{\times}10^{-5}$ \\
+INT8/INT4 QAT & $10^{6}$; then $9{\times}10^{6}$ steps, both at $10^{-4}$ \\
+W$b$A8 fine-tune & $5{\times}10^{4}$ at $10^{-4}$; then $10^{5}$ at $5{\times}10^{-5}$ \\
+Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$; then $10^{4}$ at $2{\times}10^{-5}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -55,7 +56,7 @@ Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$, then $10^{4}$ at $2{\t
     \begin{subfigure}[t]{0.48\linewidth}
         \centering
         \includegraphics[width=\linewidth]{campaign_su_mu_20260802-134343/figures/mu_tdllow/bler_qat_pruned.pdf}
-        \caption{QAT + 50\% magnitude pruning (same MU-MIMO setup)}
+        \caption{Weight QAT + 50\% magnitude pruning}
         \label{fig:bler_prune}
     \end{subfigure}
     \caption{BLER vs.\ $E_b/N_0$ for the neural receiver on DoubleTDL-low
@@ -64,18 +65,18 @@ Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$, then $10^{4}$ at $2{\t
     LMMSE--K-Best, perfect-CSI K-Best). Panel~(a) shows joint weight and
     INT8 asymmetric post-\gls{ReLU} activation \gls{QAT} (W$b$A8) in
     FP8~(E4M3), INT8, FP4~(E2M1), and INT4; panel~(b) shows the same
-    weight formats after 50\% global magnitude pruning of pointwise and
-    dense kernels.}
+    weight-QAT checkpoints after 50\% global magnitude pruning of
+    pointwise and dense kernels.}
     \label{fig:BLER}
 \end{figure*}
 
 \input{campaign_su_mu_20260809-080711/tables/mu_tdllow/wo_vs_a8}
 \input{campaign_su_mu_20260809-080711/tables/mu_tdllow/complexity}
 
-In this section, we evaluate the proposed neural receiver under a joint
-compression stack: weight \gls{QAT} at FP8~(E4M3), INT8, FP4~(E2M1), and
-INT4; INT8 asymmetric post-\gls{ReLU} activation quantization (W$b$A8);
-and 50\% magnitude pruning on the QAT weights. Evaluation uses the
+We evaluate three compression dimensions: weight \gls{QAT} at
+FP8~(E4M3), INT8, FP4~(E2M1), and INT4; INT8 asymmetric
+post-\gls{ReLU} activation quantization (W$b$A8); and 50\% magnitude
+pruning of the weight-QAT checkpoints. Evaluation uses the
 3GPP-compliant two-user PUSCH setup and optimizer budgets in
 Table~\ref{tab:sim_params}.
 We report \gls{BLER} versus rate-adjusted $E_b/N_0$ at the $10\%$ and
@@ -99,10 +100,8 @@ $0.05$\,dB at $10\%$ and $1\%$ \gls{BLER}. Relative to LS--LMMSE, both
 $1.85$--$1.95$\,dB and remain within $\sim$0.2\,dB of LMMSE--K-Best.
 Activation quantization therefore adds the arithmetic and bandwidth
 gains of 8-bit activations without a measurable radio penalty on this
-MU-MIMO link. Because W$b$A8 matches weight-only \gls{BLER}, the
-pruning results below---measured on the QAT weight
-checkpoints---characterize the sparse operating point of the same
-joint stack: weight precision, INT8 activations, and 50\% sparsity.
+MU-MIMO link. The pruning study below separately isolates weight
+sparsity using the weight-QAT checkpoints.
 
 \subsection{FP4 QAT vs.\ INT4 QAT}
 \label{sec:res_fp4}
@@ -129,15 +128,28 @@ magnitudes ($0$, $0.08$, $0.17$, and $0.25$). The E2M1 grid therefore
 resolves the body of the distribution more finely, allowing
 \gls{QAT} to adapt weights to levels unavailable under uniform INT4.
 
-\begin{figure}[t]
+\begin{figure*}[t]
     \centering
-    \includegraphics[width=\columnwidth]{insight_fp4_sparsity/figures/weight_histogram_zoom.pdf}
-    \caption{Count histogram of per-channel abs-max normalized
-    \texttt{FP32} weight magnitudes, zoomed to $|w|\leq0.4$.
-    Shading marks the region below the first nonzero INT4 level;
-    ticks show the normalized INT4 and FP4~(E2M1) grids.}
-    \label{fig:weight_hist}
-\end{figure}
+    \begin{subfigure}[t]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{insight_fp4_sparsity/figures/weight_histogram_zoom.pdf}
+        \caption{Normalized weight histogram.}
+        \label{fig:weight_hist}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{insight_fp4_sparsity/figures/sparsity_bars.pdf}
+        \caption{Layer-wise sparsity.}
+        \label{fig:sparsity_layers}
+    \end{subfigure}
+    \caption{Diagnostics of FP4 robustness. Panel~(a) compares
+    per-channel abs-max normalized \texttt{FP32} weight magnitudes
+    with the INT4 and FP4 grids. Panel~(b) shows sparsity induced by
+    global $50\%$ magnitude pruning; shaded rows mark residual state
+    writes, and error bars show standard deviation over eight unrolled
+    iterations.}
+    \label{fig:fp4_diagnostics}
+\end{figure*}
 
 \subsection{QAT with Magnitude Pruning}
 \label{sec:res_prune}
@@ -158,7 +170,10 @@ Figure~\ref{fig:sparsity_layers} reports the per-layer sparsity
 realized by a global $50\%$ magnitude threshold. The threshold does
 not produce $50\%$ zeros in every layer: INT4 systematically
 over-prunes the residual writes of width $d_s{=}56$ that close each
-CGNN block onto the skip connection. After \gls{QAT}, a large fraction
+CGNN block onto the skip connection. Update-to-state layers average
+$86.5\%$ zeros (maximum $91.4\%$) under INT4 versus $53.8\%$
+(maximum $66.2\%$) under FP4; the input-to-state layer reaches
+$78.5\%$ and $36.1\%$, respectively. After \gls{QAT}, a large fraction
 of the surviving INT4 coefficients have small magnitude, so the
 $50\%$ sparsity budget is realized predominantly by zeroing
 residual-path coefficients. On the same layers, FP4 sparsity is
@@ -168,23 +183,6 @@ disproportionately. Combined with the coarse INT4 body grid of
 Fig.~\ref{fig:weight_hist}, this
 accounts for the \gls{BLER} degradation of pruned INT4, whereas
 pruned FP4 remains within $0.1$\,dB of unpruned FP4.
-
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=\columnwidth]{insight_fp4_sparsity/figures/sparsity_bars.pdf}
-    \caption{Layer-wise sparsity induced by a single global $50\%$
-    magnitude threshold, for INT4, FP4, and INT8 \gls{QAT}
-    checkpoints (hatches remain readable in grayscale).
-    Purple bands mark residual state writes of width $d_s{=}56$.
-    Error bars denote the standard deviation across the eight unrolled
-    update/user-mix iterations; the input CNN appears once and has no
-    error bar.
-    INT4 over-prunes those residual writes: Update CNN~$\to$~state
-    ($128{\to}56$) reaches $86.5\%$ mean zeros (max $91.4\%$) versus
-    $53.8\%$ (max $66.2\%$) for FP4; Input CNN~$\to$~state is $78.5\%$
-    zeros under INT4 and $36.1\%$ under FP4.}
-    \label{fig:sparsity_layers}
-\end{figure}
 
 Table~\ref{tab:complexity} summarizes the cost of the joint stack on
 the instantiated evaluation graph (132~\glspl{PRB}, 2~users,
