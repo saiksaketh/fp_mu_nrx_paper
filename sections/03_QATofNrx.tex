@@ -17,6 +17,8 @@ fake-quantization in the same forward pass allows adaptation to both
 noise sources; W$b$A8 denotes weight precision $b$ with INT8
 post-\gls{ReLU} activations.
 
+\vspace{-2mm}
+
 \subsection{Unstructured Magnitude Pruning}
 \label{sec:pruning}
 After weight \gls{QAT} converges, global magnitude pruning is applied
@@ -38,6 +40,8 @@ $\rho=50\%$ and hold $\mathbf{M}$ fixed during recovery
 fine-tuning by projecting
 $\mathbf{W}\leftarrow\mathbf{M}\odot\mathbf{W}$ after every update,
 where $\odot$ denotes element-wise multiplication.
+
+\vspace{-2mm}
 
 \subsection{Training Protocol}
 Weight-only \gls{QAT} warm-starts from the pretrained \texttt{FP32}

@@ -8,6 +8,8 @@ integer and floating-point microformats used as weight grids.
 Activation quantization and magnitude pruning, which form the proposed
 compression stack, are specified in Section~\ref{sec:nrx_qat}.
 
+\vspace{-2mm}
+
 \subsection{Uplink Setup}
 \label{sec:system_model}
 $U$ single-layer \glspl{UE} share the same time--frequency resources
@@ -36,6 +38,8 @@ The neural receiver consumes the full post-\gls{FFT} slot (data and
 pilots) and emits per-bit \glspl{LLR} for a conventional 5G~NR
 decoder.
 
+\vspace{-2mm}
+
 \subsection{Neural Receiver Architecture}
 \label{sec:architecture}
 We build on the convolutional graph neural network (CGNN) of
@@ -54,6 +58,8 @@ trained on $4$ \glspl{PRB} can be evaluated on a $132$-\gls{PRB} grid.
 In the large configuration used here, both the input and state CNNs
 have widths $[128,128]$, aggregation uses width $64$, and the readout
 uses width $128$.
+
+\vspace{-2mm}
 
 \subsection{Loss and Training Schedule}
 \label{sec:loss}
@@ -92,6 +98,8 @@ phase-dependent window of approximately $0$--$15$\,dB. The
 \texttt{FP32} baseline is trained with Adam; quantized models
 warm-start from that checkpoint.
 
+\vspace{-2mm}
+
 \subsection{Weight Fake Quantization}
 \label{sec:fake_quant}
 Let $\mathbf{W}$ denote a kernel (convolutional or dense) and let
@@ -125,6 +133,8 @@ to rounding and, for floating-point grids, nonuniform reconstruction
 levels. Biases remain in \texttt{FP32}. For INT$b$,
 $b\in\{4,8\}$, we use the symmetric narrow-range grid with
 $g_{\max}=2^{b-1}-1$.
+
+\vspace{-2mm}
 
 \subsection{Floating-Point Microformats: FP8 and FP4}
 \label{sec:fp_micro}

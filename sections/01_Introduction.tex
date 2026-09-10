@@ -1,46 +1,25 @@
 \section{Introduction}
 \label{sec:intro}
 Neural receivers jointly learn channel estimation, equalization, and
-demapping, and can improve \gls{BLER} over conventional receiver
-pipelines \cite{scamnrx,deeprx_mimo_icc}. A real-time implementation
-of the latter supports dynamic \gls{MCS} operation
-\cite{wiesmayr2024design}.
-Model-based neural receiver alternatives retain conventional signal-processing
-structure to reduce computation and parameter count \cite{mahdi_mdx}.
+demapping, and can improve \gls{BLER} over conventional pipelines
+\cite{scamnrx,deeprx_mimo_icc}. Real-time standard-compliant
+implementations exist \cite{wiesmayr2024design}, model-based variants
+reduce computation and parameter count \cite{mahdi_mdx}, and
+fine-tuning on 5G~NR measurements closes the sim-to-real gap
+\cite{nuri_reinhard_spawc}. Memory traffic and arithmetic cost on
+\gls{GPU}-class accelerators and \gls{NPU} ASICs remain the main
+deployment constraints \cite{ran_accelerated_compute_reinhard}.
 
-Neural receivers can also be specialized to their deployment
-environment. Fine-tuning on real-world 5G~NR measurements adapts the
-receiver to local propagation and radio-frequency impairments while
-reducing the sim-to-real gap \cite{nuri_reinhard_spawc}. Together with
-real-time standard-compliant implementations, these results establish
-deployment feasibility; memory traffic and arithmetic cost on
-\gls{GPU}-class accelerators and \gls{NPU} ASICs remain key constraints
-\cite{ran_accelerated_compute_reinhard}.
+Weight quantization reduces parameter storage and activation
+quantization reduces feature-map traffic. Integer \gls{QAT} preserves
+neural-receiver performance at moderate precision \cite{saketh_qat},
+but two questions remain: whether post-\gls{ReLU} activation
+quantization is radio-neutral, and whether 4-bit weights remain viable
+under sparsity---including integer versus floating-point
+microformats---for standard-compliant \gls{MU}-\gls{MIMO} reception.
 
-Weight quantization reduces parameter storage, whereas activation
-quantization reduces convolutional feature-map traffic. Integer
-\gls{QAT} preserves neural-receiver performance at moderate precision
-\cite{saketh_qat}, but two deployment questions remain: whether
-post-\gls{ReLU} activation quantization preserves link performance,
-and whether 4-bit weights remain viable when combined with sparsity.
-In particular, the relative behavior of integer and floating-point
-microformats under these constraints has not been characterized for
-standard-compliant \gls{MU}-\gls{MIMO} neural reception.
-
-We address these questions using joint weight--activation \gls{QAT} for this
-standard-compliant \gls{MU}-\gls{MIMO} receiver.
-Per-channel INT8/INT4 and FP8/FP4 weight quantization is combined with
-INT8 asymmetric post-\gls{ReLU} activations and optional global
-unstructured magnitude pruning of $50\%$ of the eligible pointwise
-and dense weights. The evaluation isolates the effects of activation
-quantization and pruning at 8 and 4~bits against \texttt{FP32} and
-conventional receiver baselines. On the evaluated multi-user
-\gls{PUSCH} setup, 8-bit weights with INT8 post-\gls{ReLU} activations
-are effectively lossless. At 4~bits, FP4 remains better than
-\gls{LS}--\gls{LMMSE} and incurs negligible additional SNR penalty
-after globally pruning half of the eligible weights; INT4 degrades
-substantially under the same pruning rule. The 4-bit analysis relates the
-FP4--INT4 \gls{BLER} gap to the normalized kernel distribution and to
-the layer-wise sparsity induced by global magnitude pruning. An
-analytic deployment model quantifies weight storage, activation
-traffic, and bit-operation complexity.
+We study joint weight--activation \gls{QAT} with optional $50\%$
+unstructured magnitude pruning on this receiver, and relate the
+4-bit \gls{BLER} gap to the normalized kernel distribution, the
+layer-wise sparsity of a global magnitude threshold, and an analytic
+model of storage, activation traffic, and bit-operations.

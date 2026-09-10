@@ -1,25 +1,19 @@
+\vspace{-2mm}
 \section{Conclusion and Future Work}
 \label{conclusion}
-We have presented joint weight-and-activation \gls{QAT}, optionally
-combined with 50\% unstructured magnitude pruning, for a
-standard-compliant MU-\gls{MIMO} 5G~NR neural receiver. At 8~bits,
-FP8+A8 and INT8+A8 match the \texttt{FP32} receiver to within
-$0.05$\,dB at $10\%$ and $1\%$ \gls{BLER}, with $3.8\times$ real
-weight compression and up to $16\times$ fewer bit-operations per slot
-(Table~\ref{tab:complexity}). At 4~bits, FP4~(E2M1) limits the gap to
-\texttt{FP32} to approximately $1.3$\,dB and remains superior to
-\gls{LS}--\gls{LMMSE}, whereas INT4 does not; the difference is
-consistent with the concentration of normalized weights near zero
-(Fig.~\ref{fig:weight_hist}). The same
-ordering holds after 50\% pruning
-(Fig.~\ref{fig:sparsity_layers}). The evaluation is restricted to
-DoubleTDL-low at MCS~14 with post-\gls{ReLU} activation quantization;
-richer MCS sets, higher antenna correlation, and larger user loads
-are left to future work.
+Joint weight--activation \gls{QAT}, optionally with 50\% unstructured
+magnitude pruning, compresses a standard-compliant MU-\gls{MIMO}
+5G~NR neural receiver with negligible radio cost at 8~bits. At
+4~bits, FP4~(E2M1) remains superior to \gls{LS}--\gls{LMMSE} after
+pruning, whereas INT4 does not; the gap tracks the concentration of
+normalized weights near zero and the layer-wise sparsity induced by a
+global magnitude threshold.
 
-The trained E2M1 codebook already coincides with the MXFP4 element
-type \cite{ocp2023mx}, so remaining work on native MXFP4 inference is
-packaging rather than a new radio design. Combining the quantization
-grid with structured sparsity (e.g., 2:4) is a further step toward
-memory- and compute-efficient neural uplink receivers for \gls{6G}
-\gls{RAN}.
+The evaluation is restricted to DoubleTDL-low at MCS~14 with
+post-\gls{ReLU} activation quantization; richer MCS sets, higher
+antenna correlation, and larger user loads are left to future work.
+The trained E2M1 codebook already matches the MXFP4 element type
+\cite{ocp2023mx}, so native MXFP4 inference is a packaging task.
+Combining the grid with structured sparsity (e.g., 2:4) is a further
+step toward memory- and compute-efficient neural uplink receivers for
+\gls{6G} \gls{RAN}.

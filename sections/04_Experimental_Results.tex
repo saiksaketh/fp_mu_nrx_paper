@@ -37,8 +37,8 @@ Channel (eval) & DoubleTDL-low \cite{scamnrx}: \\
  & UE2 TDL-C300/100 ($300$\,ns, $100$\,Hz) \\
 NRX depth $N_{\mathrm{it}}$ / state width $d_s$ & 8 / 56 \\
 Batch $N_B$ (slots / step) & 128 \\
-FP8/FP4 QAT & $5{\times}10^{4}$ at $10^{-4}$; then $2{\times}10^{5}$ at $5{\times}10^{-5}$ \\
-INT8/INT4 QAT & $10^{6}$; then $9{\times}10^{6}$ steps, both at $10^{-4}$ \\
+FP8/FP4/INT8/INT4 QAT & $5{\times}10^{4}$ at $10^{-4}$; then $2{\times}10^{5}$ at $5{\times}10^{-5}$ \\
+%INT8/INT4 QAT & $10^{6}$; then $9{\times}10^{6}$ steps, both at $10^{-4}$ \\
 W$b$A8 fine-tune & $5{\times}10^{4}$ at $10^{-4}$; then $10^{5}$ at $5{\times}10^{-5}$ \\
 Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$; then $10^{4}$ at $2{\times}10^{-5}$ \\
 \bottomrule
@@ -70,6 +70,29 @@ Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$; then $10^{4}$ at $2{\t
     \label{fig:BLER}
 \end{figure*}
 
+\begin{figure*}[t]
+    \centering
+    \begin{subfigure}[t]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{insight_fp4_sparsity/figures/weight_histogram_zoom.pdf}
+        \caption{Normalized weight histogram.}
+        \label{fig:weight_hist}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{insight_fp4_sparsity/figures/sparsity_bars.pdf}
+        \caption{Layer-wise sparsity.}
+        \label{fig:sparsity_layers}
+    \end{subfigure}
+    \caption{Diagnostics of FP4 robustness. Panel~(a) compares
+    per-channel abs-max normalized \texttt{FP32} weight magnitudes
+    with the INT4 and FP4 grids. Panel~(b) shows sparsity induced by
+    global $50\%$ magnitude pruning; shaded rows mark residual state
+    writes, and error bars show standard deviation over eight unrolled
+    iterations.}
+    \label{fig:fp4_diagnostics}
+\end{figure*}
+
 \input{campaign_su_mu_20260809-080711/tables/mu_tdllow/wo_vs_a8}
 \input{campaign_su_mu_20260809-080711/tables/mu_tdllow/complexity}
 
@@ -87,6 +110,8 @@ K-Best detection, and an ideal K-Best receiver with perfect CSI
 (Fig.~\ref{fig:BLER}). An analytic complexity model of the deployed
 graph complements the radio results.
 
+\vspace{-2mm}
+
 \subsection{Activation Quantization is Radio-Neutral at 8~Bits}
 \label{sec:res_a8}
 Figure~\ref{fig:bler_qat} shows \gls{BLER} for the unpruned QAT
@@ -102,6 +127,8 @@ Activation quantization therefore adds the arithmetic and bandwidth
 gains of 8-bit activations without a measurable radio penalty on this
 MU-MIMO link. The pruning study below separately isolates weight
 sparsity using the weight-QAT checkpoints.
+
+\vspace{-2mm}
 
 \subsection{FP4 QAT vs.\ INT4 QAT}
 \label{sec:res_fp4}
@@ -127,29 +154,7 @@ weights but only two INT4 magnitudes, including zero, versus four FP4
 magnitudes ($0$, $0.08$, $0.17$, and $0.25$). The E2M1 grid therefore
 resolves the body of the distribution more finely, allowing
 \gls{QAT} to adapt weights to levels unavailable under uniform INT4.
-
-\begin{figure*}[t]
-    \centering
-    \begin{subfigure}[t]{0.48\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{insight_fp4_sparsity/figures/weight_histogram_zoom.pdf}
-        \caption{Normalized weight histogram.}
-        \label{fig:weight_hist}
-    \end{subfigure}\hfill
-    \begin{subfigure}[t]{0.48\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{insight_fp4_sparsity/figures/sparsity_bars.pdf}
-        \caption{Layer-wise sparsity.}
-        \label{fig:sparsity_layers}
-    \end{subfigure}
-    \caption{Diagnostics of FP4 robustness. Panel~(a) compares
-    per-channel abs-max normalized \texttt{FP32} weight magnitudes
-    with the INT4 and FP4 grids. Panel~(b) shows sparsity induced by
-    global $50\%$ magnitude pruning; shaded rows mark residual state
-    writes, and error bars show standard deviation over eight unrolled
-    iterations.}
-    \label{fig:fp4_diagnostics}
-\end{figure*}
+\vspace{-2mm}
 
 \subsection{QAT with Magnitude Pruning}
 \label{sec:res_prune}
