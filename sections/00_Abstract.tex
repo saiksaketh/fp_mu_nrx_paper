@@ -1,17 +1,11 @@
 \begin{abstract}
-Deploying neural receivers requires reducing their memory traffic and
-arithmetic cost without compromising link performance. We investigate
-joint weight--activation \gls{QAT} and magnitude pruning for a
-standard-compliant 5G~NR MU-\gls{MIMO} neural receiver. The evaluated
-configurations use INT8, INT4, FP8~(E4M3), or FP4~(E2M1) weights,
-INT8 asymmetric post-\gls{ReLU} activations, and optional $50\%$
-unstructured sparsity. On a dual-user DoubleTDL-low uplink, the 8-bit
-models remain within $0.05$\,dB of \texttt{FP32} at $10\%$ and $1\%$
-\gls{BLER}; an analytic cost model yields up to $16\times$ fewer
-bit-operations and $3.8\times$--$7.1\times$ real weight compression.
-At 4~bits, FP4 incurs an approximately $1.3$\,dB gap to \texttt{FP32}
-and outperforms LS--LMMSE at both \gls{BLER} targets, before and after
-$50\%$ pruning, whereas INT4 degrades sharply.
+Efficient neural-receiver deployment demands lower memory traffic and computation without sacrificing link performance.
+We compress a standard-compliant 5G~NR \gls{MU}-\gls{MIMO} neural receiver using weight--activation \gls{QAT} and, separately, magnitude pruning.
+We evaluate post-\gls{ReLU} INT8 activation quantization and $50\%$ pruning with INT8/INT4 and FP8~(E4M3)/FP4~(E2M1) weights.
+On a two-user DoubleTDL-low uplink, 8-bit weight--activation models stay within $0.05$\,dB of \texttt{FP32}; activation quantization adds at most $0.04$\,dB at both \gls{BLER} targets.
+Analytically, pruned 4-bit inference achieves $66\times$ bit-operation and $8.8\times$ weight-footprint reductions.
+FP4 trails \texttt{FP32} by $\sim1.3$\,dB yet outperforms LS--LMMSE before and after pruning, with at most $0.1$\,dB pruning penalty.
+This aligns with FP4's denser near-zero grid and lower residual-path sparsity.
 \end{abstract}
 
 %
