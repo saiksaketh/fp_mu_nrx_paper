@@ -45,6 +45,8 @@ Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$; then $10^{4}$ at $2{\t
 \end{tabular}
 \end{table}
 
+\begin{comment}
+
 \begin{figure*}[t]
     \centering
     \begin{subfigure}[t]{0.48\linewidth}
@@ -67,6 +69,26 @@ Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$; then $10^{4}$ at $2{\t
     FP8~(E4M3), INT8, FP4~(E2M1), and INT4; panel~(b) shows the same
     weight-QAT checkpoints after 50\% global magnitude pruning of
     pointwise and dense kernels.}
+    \label{fig:BLER}
+\end{figure*}
+\end{comment}
+\begin{figure*}[t]
+    \centering
+    \begin{subfigure}[t]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{campaign_su_mu_20260809-080711/figures/mu_tdllow/bler_qat_activation.pdf}
+        \caption{W$b$A8 QAT}
+        \label{fig:bler_qat}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{campaign_su_mu_20260802-134343/figures/mu_tdllow/bler_qat_pruned.pdf}
+        \caption{Weight QAT + 50\% prune}
+        \label{fig:bler_prune}
+    \end{subfigure}
+    \caption{\gls{BLER} versus $E_b/N_0$ on DoubleTDL-low for W$b$A8
+    \gls{QAT} (a) and 50\%-pruned weight-\gls{QAT} (b).
+    Formats: FP8~(E4M3), INT8, FP4~(E2M1), INT4.}
     \label{fig:BLER}
 \end{figure*}
 
