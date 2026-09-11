@@ -26,7 +26,7 @@ Parameter & Value \\
 Users $\times$ layers (eval) & $2\times1$ \\
 Rx antennas $B$ & 4 \\
 Carrier / SCS & 2.14\,GHz / 30\,kHz \\
-OFDM symbols / slot & 14 \\
+OFDM symbols & 14 \\
 PRBs (train / eval) & 4 / 132 \\
 MCS / code rate $R$ (Table~1 \cite{3gpp38214})
   & index 14 / $R\approx0.48$ (16-QAM) \\
@@ -36,7 +36,7 @@ Channel (eval) & DoubleTDL-low \cite{scamnrx}: \\
  & UE1 TDL-B100/400 ($100$\,ns, $400$\,Hz) \\
  & UE2 TDL-C300/100 ($300$\,ns, $100$\,Hz) \\
 NRX depth $N_{\mathrm{it}}$ / state width $d_s$ & 8 / 56 \\
-Batch $N_B$ (slots / step) & 128 \\
+Batch size $N_B$ & 128 \\
 FP8/FP4/INT8/INT4 QAT & $5{\times}10^{4}$ at $10^{-4}$; then $2{\times}10^{5}$ at $5{\times}10^{-5}$ \\
 %INT8/INT4 QAT & $10^{6}$; then $9{\times}10^{6}$ steps, both at $10^{-4}$ \\
 W$b$A8 fine-tune & $5{\times}10^{4}$ at $10^{-4}$; then $10^{5}$ at $5{\times}10^{-5}$ \\

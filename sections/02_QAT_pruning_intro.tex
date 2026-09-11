@@ -35,7 +35,7 @@ Payload bits are
 \gls{LDPC}-encoded and mapped to \gls{QAM} symbols; known
 \gls{DMRS} tones enable an initial least-squares channel estimate.
 The neural receiver consumes the full post-\gls{FFT} slot (data and
-pilots) and emits per-bit \glspl{LLR} for a conventional 5G~NR
+pilots) and outputs per-bit \glspl{LLR} which is processed via conventional 5G~NR
 decoder.
 
 \vspace{-2mm}
@@ -90,8 +90,8 @@ $\sigma$ is the sigmoid, and $\lambda>0$ weights the auxiliary loss.
 Both loss terms are summed over all
 $N_{\mathrm{it}}$ unrolled receiver iterations, and $\lambda$ decays
 from $0.02$ to $0.01$ across two schedule phases. Each optimizer step
-draws a mini-batch of $N_B{=}128$ independently simulated OFDM
-slots in Sionna \cite{sionna}, with random active-user counts,
+draws a mini-batch of size $N_B{=}128$ in Sionna \cite{sionna},
+with random active-user counts,
 velocities in $[0,56]$\,m/s, and rate-adjusted bit-energy-to-noise
 ratio $E_b/N_0$ in a
 phase-dependent window of approximately $0$--$15$\,dB. The
