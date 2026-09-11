@@ -1,25 +1,25 @@
 \section{Introduction}
 \label{sec:intro}
 Neural receivers jointly learn channel estimation, equalization, and
-demapping, and can improve \gls{BLER} over conventional pipelines
-\cite{scamnrx,deeprx_mimo_icc}. Real-time standard-compliant
-implementations exist \cite{wiesmayr2024design}, model-based variants
-reduce computation and parameter count \cite{mahdi_mdx}, and
-fine-tuning on 5G~NR measurements closes the sim-to-real gap
-\cite{nuri_reinhard_spawc}. Memory traffic and arithmetic cost on
-\gls{GPU}-class accelerators and \gls{NPU} ASICs remain the main
-deployment constraints \cite{ran_accelerated_compute_reinhard}.
+demapping and can improve \gls{BLER} over conventional pipelines
+\cite{scamnrx,deeprx_mimo_icc}. A standard-compliant real-time
+implementation has been demonstrated \cite{wiesmayr2024design}, model-driven variants
+reduce computation and parameter counts \cite{mahdi_mdx}, and
+fine-tuning on 5G~NR measurements mitigates sim-to-real mismatch
+\cite{nuri_reinhard_spawc}. \glspl{GPU} provide programmable, adaptive,
+real-time RAN compute; the reported neural receiver requires
+$\sim26$\,TFLOP/s, motivating
+quantization to reduce storage, traffic, and bit-operation complexity
+\cite{ran_accelerated_compute_reinhard}.
+Integer \gls{QAT} approaches
+full-precision neural-receiver performance at 4~bits \cite{saketh_qat}.
+We address two questions: whether post-\gls{ReLU} activation
+quantization preserves link performance and whether sparse 4-bit
+weights favor integer or floating-point microformats in
+standard-compliant \gls{MU}-\gls{MIMO} reception.
 
-Weight quantization reduces parameter storage and activation
-quantization reduces feature-map traffic. Integer \gls{QAT} preserves
-neural-receiver performance at moderate precision \cite{saketh_qat},
-but two questions remain: whether post-\gls{ReLU} activation
-quantization is radio-neutral, and whether 4-bit weights remain viable
-under sparsity---including integer versus floating-point
-microformats---for standard-compliant \gls{MU}-\gls{MIMO} reception.
-
-We study joint weight--activation \gls{QAT} with optional $50\%$
-unstructured magnitude pruning on this receiver, and relate the
-4-bit \gls{BLER} gap to the normalized kernel distribution, the
-layer-wise sparsity of a global magnitude threshold, and an analytic
-model of storage, activation traffic, and bit-operations.
+We separately evaluate weight--activation \gls{QAT} and $50\%$
+unstructured pruning. We show negligible SNR penalty from 8-bit
+activations and FP4 robustness to pruning, explain the FP4--INT4 gap
+through normalized weight distributions and residual-path sparsity,
+and quantify storage, activation traffic, and bit-operations analytically.
