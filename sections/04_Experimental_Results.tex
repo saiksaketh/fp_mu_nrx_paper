@@ -214,8 +214,8 @@ pruned FP4 remains within $0.1$\,dB of unpruned FP4.
 Table~\ref{tab:complexity} summarizes the cost of the joint stack on
 the instantiated evaluation graph (132~\glspl{PRB}, 2~users,
 8 iterations). The receiver performs $19.22$\,G\,\glspl{MAC} per slot,
-of which $76\%$ come from $1{\times}1$ pointwise convolutions---the
-dominant GEMM-like operator targeted by low-bit quantization.
+of which $76\%$ come from $1{\times}1$ pointwise convolutions, the
+dominant GEMM-like kernels targeted by low-bit quantization.
 With INT8 asymmetric activations, 8-bit weights reduce bit-operations
 by $16\times$ and the real weight footprint by $3.8\times$; 4-bit
 weights reach $7.1\times$ compression, with a further reduction in

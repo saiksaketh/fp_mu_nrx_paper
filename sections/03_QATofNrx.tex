@@ -3,51 +3,48 @@
 
 \subsection{Weight and Activation Quantization}
 \label{sec:act_quant}
-Every convolutional and dense kernel---depthwise, pointwise,
-aggregation, and readout---uses \eqref{eq:fake_quant} with the INT8,
-INT4, FP8~(E4M3) \cite{micikevicius2022fp8}, or FP4~(E2M1) grids of
-Section~\ref{sec:qat_pruning}; biases remain in \texttt{FP32}. For a
-post-\gls{ReLU} activation tensor $\mathbf{a}$, nonnegativity allows
-unsigned asymmetric INT8 to use all 256 codes over
-$[0,\max(\mathbf{a})]$, with per-tensor scale
-$\Delta_a=\max(\mathbf{a})/255$ \cite{jacob2018quantization}.
-Network inputs, residual states, aggregation outputs, and LLR/channel
-heads remain in \texttt{FP32}. Applying weight and activation
-fake-quantization in the same forward pass allows adaptation to both
-noise sources; W$b$A8 denotes weight precision $b$ with INT8
-post-\gls{ReLU} activations.
+All convolutional and dense kernels (depthwise, pointwise,
+aggregation, and readout) use \eqref{eq:fake_quant} with the INT8,
+INT4, FP8~(E4M3), or FP4~(E2M1) grids defined in
+Section~\ref{sec:qat_pruning}. Biases use the corresponding weight
+format. For a
+post-\gls{ReLU} tensor $\mathbf{a}$, nonnegativity permits all 256
+unsigned INT8 codes over $[0,\max(\mathbf{a})]$. The per-tensor scale
+and fake-quantized activation are
+$\Delta_a=\max(\mathbf{a})/255$ and
+$\widehat{\mathbf{a}}=\Delta_a\operatorname{round}(\mathbf{a}/\Delta_a)$,
+respectively \cite{jacob2018quantization}. Network inputs and LLR/channel heads remain in
+\texttt{FP32}. Joint weight and activation fake quantization lets
+training adapt to both quantization errors. W$b$A8 denotes $b$-bit
+weights with INT8 post-\gls{ReLU} activations.
 
 \vspace{-2mm}
 
 \subsection{Unstructured Magnitude Pruning}
 \label{sec:pruning}
-After weight \gls{QAT} converges, global magnitude pruning is applied
-to pointwise-convolution and aggregation/dense kernels; depthwise
-kernels and the LLR readout remain dense
-\cite{song_han_1,kuzmin2023pruning}. Let $\mathcal{T}$ be this
-eligible coefficient set, $W_i$ its $i$th coefficient, and $M_i$ the
-corresponding binary keep-mask entry. A global threshold $\tau$ sets
-sparsity $\rho$ through
+After weight \gls{QAT} converges, global magnitude pruning targets
+pointwise-convolution, aggregation, and non-readout dense kernels.
+Depthwise and readout kernels remain dense
+\cite{song_han_1,kuzmin2023pruning}. Let $\mathcal{T}$ index eligible
+coefficients, $W_i$ denote coefficient $i$, and $M_i$ its binary keep
+mask. A global threshold $\tau$ sets sparsity $\rho$ through
 \begin{equation}
 \label{eq:prune_mask}
   M_i=\mathds{1}_{\{|W_i|\ge\tau\}},\qquad
   W_i^{\mathrm{pr}}=M_iW_i .
 \end{equation}
-Here,
-$\rho=|\{i\in\mathcal{T}:|W_i|<\tau\}|/|\mathcal{T}|$ is the fraction
-of eligible coefficients removed by the global threshold. We use
-$\rho=50\%$ and hold $\mathbf{M}$ fixed during recovery
-fine-tuning by projecting
-$\mathbf{W}\leftarrow\mathbf{M}\odot\mathbf{W}$ after every update,
-where $\odot$ denotes element-wise multiplication.
+The removed fraction is
+$\rho=|\{i\in\mathcal{T}:|W_i|<\tau\}|/|\mathcal{T}|$. We set
+$\rho=50\%$ and freeze $\mathbf{M}$ during recovery fine-tuning,
+enforcing $\mathbf{W}\leftarrow\mathbf{M}\odot\mathbf{W}$ after each
+update, where $\odot$ denotes elementwise multiplication.
 
 \vspace{-2mm}
 
 \subsection{Training Protocol}
-Weight-only \gls{QAT} warm-starts from the pretrained \texttt{FP32}
-checkpoint following \cite{saketh_qat}. Each W$b$A8 model is
-initialized from its corresponding weight-only checkpoint and
-fine-tuned with both fake-quantizers active. Sparse models are formed
-after weight \gls{QAT} and undergo fixed-mask recovery fine-tuning.
-Batch sizes, iteration budgets, and learning rates are listed in
-Table~\ref{tab:sim_params}.
+Weight-only \gls{QAT} starts from the pretrained \texttt{FP32}
+checkpoint \cite{neural_rx}. Each W$b$A8 model is fine-tuned from its
+corresponding weight-only checkpoint with both fake quantizers active.
+Separately, sparse models are formed from weight-only checkpoints and
+undergo fixed-mask recovery fine-tuning. Table~\ref{tab:sim_params}
+lists batch sizes, iteration budgets, and learning rates.

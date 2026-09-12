@@ -60,9 +60,10 @@ readout widths are $64$ and $128$, respectively.
 \subsection{Loss and Training Schedule}
 \label{sec:loss}
 Training minimizes bitwise \gls{BCE} with an auxiliary
-channel-estimation loss. At iteration $k$, let $\hat{L}^{(k)}$ denote
-the predicted \gls{LLR}, and $\mathbf{h}$ and $\hat{\mathbf{h}}^{(k)}$ denote the
-true and estimated channel vectors. The objective is
+channel-estimation loss. At iteration $k$, for coded bit $b\in\{0,1\}$,
+let $\hat{L}^{(k)}$ denote the predicted \gls{LLR}, with positive
+values favoring $b{=}1$, and let $\mathbf{h}$ and $\hat{\mathbf{h}}^{(k)}$
+denote the true and estimated channel vectors. The objective is
 \begin{align}
 \label{eq:bce}
   \mathcal{L}_{\mathrm{BCE}}^{(k)}
@@ -124,9 +125,9 @@ Fixing the scale to the channel extrema removes that degree of freedom
 while covering the full dynamic range. Unlike abs-max \gls{PTQ}
 \cite{saketh_asilomar25}, which quantizes a frozen \texttt{FP32}
 checkpoint once, \eqref{eq:absmax_scale} is recomputed from the current
-master weights at every training step; the weights can therefore adapt
+master weights at every training step; weights can adapt
 to rounding and, for floating-point grids, nonuniform reconstruction
-levels. Biases remain in \texttt{FP32}. For INT$b$,
+levels. Biases use the corresponding weight format. For INT$b$,
 $b\in\{4,8\}$, we use the symmetric narrow-range grid with
 $g_{\max}=2^{b-1}-1$.
 
