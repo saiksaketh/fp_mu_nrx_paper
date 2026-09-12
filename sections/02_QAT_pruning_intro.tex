@@ -42,8 +42,7 @@ conventional 5G~NR decoding.
 \label{sec:architecture}
 We adopt the \gls{CGNN} architecture for variable-user,
 variable-bandwidth MU-\gls{MIMO} \gls{PUSCH} reception
-\cite{scamnrx}. Related deployment studies report stringent memory
-and compute budgets \cite{wiesmayr2024design}. An input CNN embeds each
+\cite{neural_rx}. An input CNN embeds each
 resource element into a $d_s{=}56$-dimensional state. The
 $N_{\mathrm{it}}{=}8$ unrolled blocks exchange information across
 users through dense aggregation and across the time--frequency grid
@@ -87,7 +86,8 @@ where $\sigma$ is the logistic sigmoid, $\mathbb{E}$ averages over data
 bits and channel realizations, and $\lambda>0$ weights the auxiliary
 loss. Both losses are summed across all $N_{\mathrm{it}}$ unrolled
 iterations; $\lambda$ is set to $0.02$ and $0.01$ in successive
-training phases. Training is implemented in Sionna \cite{sionna}.
+training phases. Training is implemented in Sionna \cite{sionna} using the
+open-source neural receiver of \cite{neural_rx}.
 Each mini-batch contains $N_B{=}128$ samples with random active-user
 counts, velocities in $[0,56]$\,m/s, and rate-adjusted $E_b/N_0$ drawn
 from phase-specific ranges spanning approximately $0$--$15$\,dB. The
