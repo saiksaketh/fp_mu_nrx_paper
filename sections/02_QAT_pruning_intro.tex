@@ -1,20 +1,19 @@
 \section{Background}
 \label{sec:qat_pruning}
 
-This section reviews the MU-\gls{MIMO} uplink model, the convolutional
-graph neural receiver that we compress, and the associated training
-objective. It then recalls per-channel fake quantization and the
-integer and floating-point microformats used as weight grids.
-Activation quantization and magnitude pruning, which form the proposed
-compression stack, are specified in Section~\ref{sec:nrx_qat}.
+This section presents the MU-\gls{MIMO} uplink model, the convolutional
+graph neural receiver, and its training objective. We then define
+per-channel fake quantization and the integer and floating-point weight
+grids. Section~\ref{sec:nrx_qat} specifies activation quantization and
+magnitude pruning.
 
 \vspace{-2mm}
 
 \subsection{Uplink Setup}
 \label{sec:system_model}
-$U$ single-layer \glspl{UE} share the same time--frequency resources
-toward a base station with $B$ antennas. After OFDM demodulation, each
-resource element at subcarrier $s$ and OFDM symbol $t$ observes
+$U$ single-layer \glspl{UE} transmit over the same time--frequency
+resources to an $N_{\mathrm{rx}}$-antenna base station. After OFDM demodulation, the
+received vector at subcarrier $s$ and OFDM symbol $t$ is
 \begin{equation}
 \label{eq:mu_mimo}
   \mathbf{y}_{s,t}
@@ -22,52 +21,51 @@ resource element at subcarrier $s$ and OFDM symbol $t$ observes
     \mathbf{H}_{s,t,u}\,x_{s,t,u}
     + \mathbf{n}_{s,t},
   \qquad
-  \mathbf{n}_{s,t}\sim\mathcal{CN}(\mathbf{0},N_0\mathbf{I}_B),
+  \mathbf{n}_{s,t}\sim\mathcal{CN}(\mathbf{0},N_0\mathbf{I}_{N_{\mathrm{rx}}}),
 \end{equation}
 where $u$ indexes the \glspl{UE},
-$x_{s,t,u}\in\mathbb{C}$ is the transmitted symbol,
-$\mathbf{H}_{s,t,u}\in\mathbb{C}^{B}$ is its channel vector, and
-$\mathbf{y}_{s,t},\mathbf{n}_{s,t}\in\mathbb{C}^{B}$ are the received
-and noise vectors. Here, $\mathcal{CN}$ denotes a circularly symmetric
-complex Gaussian distribution, $N_0$ is the noise variance per receive
-component, and $\mathbf{I}_B$ is the $B$-dimensional identity matrix.
-Payload bits are
-\gls{LDPC}-encoded and mapped to \gls{QAM} symbols; known
-\gls{DMRS} tones enable an initial least-squares channel estimate.
-The neural receiver consumes the full post-\gls{FFT} slot (data and
-pilots) and outputs per-bit \glspl{LLR} which is processed via conventional 5G~NR
-decoder.
+$x_{s,t,u}\in\mathbb{C}$ is the symbol transmitted by UE $u$,
+$\mathbf{H}_{s,t,u}\in\mathbb{C}^{N_{\mathrm{rx}}}$ is the corresponding channel vector, and
+$\mathbf{y}_{s,t},\mathbf{n}_{s,t}\in\mathbb{C}^{N_{\mathrm{rx}}}$ are the received
+and noise vectors, respectively. Here, $\mathcal{CN}$ denotes a
+circularly symmetric complex Gaussian distribution, $N_0$ is the noise
+variance per receive component, and $\mathbf{I}_{N_{\mathrm{rx}}}$ is the
+$N_{\mathrm{rx}}$-dimensional identity matrix. Payload bits are \gls{LDPC}-encoded
+and mapped to \gls{QAM} symbols; known \gls{DMRS} tones provide an
+initial \gls{LS} channel estimate. The neural receiver processes the
+post-\gls{FFT} data and pilot grid and outputs per-bit \glspl{LLR} for
+conventional 5G~NR decoding.
 
 \vspace{-2mm}
 
 \subsection{Neural Receiver Architecture}
 \label{sec:architecture}
-We build on the convolutional graph neural network (CGNN) of
-\cite{scamnrx}, designed for flexible MU-\gls{MIMO} \gls{PUSCH}
-reception; related deployment studies emphasize tight memory and
-compute budgets \cite{wiesmayr2024design}. A small input CNN embeds
-each resource element into a state of dimension $d_s{=}56$;
-$N_{\mathrm{it}}{=}8$ unrolled blocks then mix information across
-users (dense aggregation) and across the time--frequency grid
-(separable convolutions); a final dense readout produces \glspl{LLR}.
-Separable layers factor into a depthwise spatial filter and a
-pointwise mixer; only the latter, together with the aggregation and
-dense kernels, is eligible for pruning (Section~\ref{sec:pruning}).
-The same weights apply across user counts and bandwidths, so a model
-trained on $4$ \glspl{PRB} can be evaluated on a $132$-\gls{PRB} grid.
-In the large configuration used here, both the input and state CNNs
-have widths $[128,128]$, aggregation uses width $64$, and the readout
-uses width $128$.
+We adopt the \gls{CGNN} architecture for variable-user,
+variable-bandwidth MU-\gls{MIMO} \gls{PUSCH} reception
+\cite{scamnrx}. Related deployment studies report stringent memory
+and compute budgets \cite{wiesmayr2024design}. An input CNN embeds each
+resource element into a $d_s{=}56$-dimensional state. The
+$N_{\mathrm{it}}{=}8$ unrolled blocks exchange information across
+users through dense aggregation and across the time--frequency grid
+through separable convolutions; a dense readout produces \glspl{LLR}.
+Each separable convolution comprises a depthwise spatial filter and a
+pointwise channel mixer. Pruning targets pointwise, aggregation, and
+non-readout dense kernels; depthwise and readout kernels remain dense
+(Section~\ref{sec:pruning}). Shared weights support varying user
+counts and bandwidths, allowing training on $4$ \glspl{PRB} and
+evaluation on a $132$-\gls{PRB} grid. In the large configuration,
+input and state CNN widths are $[128,128]$, while aggregation and
+readout widths are $64$ and $128$, respectively.
 
 \vspace{-2mm}
 
 \subsection{Loss and Training Schedule}
 \label{sec:loss}
-Training is driven by bit-metric decoding quality with an auxiliary
-channel estimate. Let $b\in\{0,1\}$ denote a coded data bit,
-$\hat{L}$ its predicted \gls{LLR}, and $\mathbf{h}$ and
-$\hat{\mathbf{h}}$ the true and auxiliary channel vectors,
-respectively. We minimize
+Training minimizes bitwise \gls{BCE} with an auxiliary
+channel-estimation loss. For coded bit $b\in\{0,1\}$, let $\hat{L}$
+denote the predicted \gls{LLR}, with positive values favoring $b=1$,
+and let $\mathbf{h}$ and $\hat{\mathbf{h}}$ denote the true and
+estimated channel vectors. We minimize
 \begin{align}
 \label{eq:bce}
   \mathcal{L}_{\mathrm{BCE}}
@@ -85,16 +83,14 @@ respectively. We minimize
   &= \mathcal{L}_{\mathrm{BCE}}
      + \lambda\,\mathcal{L}_{\mathrm{MSE}},
 \end{align}
-where $\mathbb{E}$ averages over data bits and channel realizations,
-$\sigma$ is the sigmoid, and $\lambda>0$ weights the auxiliary loss.
-Both loss terms are summed over all
-$N_{\mathrm{it}}$ unrolled receiver iterations, and $\lambda$ decays
-from $0.02$ to $0.01$ across two schedule phases. Each optimizer step
-draws a mini-batch of size $N_B{=}128$ in Sionna \cite{sionna},
-with random active-user counts,
-velocities in $[0,56]$\,m/s, and rate-adjusted bit-energy-to-noise
-ratio $E_b/N_0$ in a
-phase-dependent window of approximately $0$--$15$\,dB. The
+where $\sigma$ is the logistic sigmoid, $\mathbb{E}$ averages over data
+bits and channel realizations, and $\lambda>0$ weights the auxiliary
+loss. Both losses are summed across all $N_{\mathrm{it}}$ unrolled
+iterations; $\lambda$ is set to $0.02$ and $0.01$ in successive
+training phases. Training is implemented in Sionna \cite{sionna}.
+Each mini-batch contains $N_B{=}128$ samples with random active-user
+counts, velocities in $[0,56]$\,m/s, and rate-adjusted $E_b/N_0$ drawn
+from phase-specific ranges spanning approximately $0$--$15$\,dB. The
 \texttt{FP32} baseline is trained with Adam; quantized models
 warm-start from that checkpoint.
 
