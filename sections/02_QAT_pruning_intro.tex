@@ -40,20 +40,19 @@ conventional 5G~NR decoding.
 
 \subsection{Neural Receiver Architecture}
 \label{sec:architecture}
-We adopt the \gls{CGNN} architecture for variable-user,
-variable-bandwidth MU-\gls{MIMO} \gls{PUSCH} reception
-\cite{neural_rx}. An input CNN embeds each
-resource element into a $d_s{=}56$-dimensional state. The
-$N_{\mathrm{it}}{=}8$ unrolled blocks exchange information across
+We adopt the \gls{CGNN} architecture for MU-\gls{MIMO}
+\gls{PUSCH} reception \cite{neural_rx}. An input CNN maps each resource
+element to a $d_s{=}56$-dimensional state. Each of the
+$N_{\mathrm{it}}{=}8$ unrolled blocks exchanges information across
 users through dense aggregation and across the time--frequency grid
 through separable convolutions; a dense readout produces \glspl{LLR}.
 Each separable convolution comprises a depthwise spatial filter and a
 pointwise channel mixer. Pruning targets pointwise, aggregation, and
 non-readout dense kernels; depthwise and readout kernels remain dense
-(Section~\ref{sec:pruning}). Shared weights support varying user
-counts and bandwidths, allowing training on $4$ \glspl{PRB} and
+(Section~\ref{sec:pruning}). Shared weights accommodate varying user
+counts and bandwidths, enabling training on $4$ \glspl{PRB} and
 evaluation on a $132$-\gls{PRB} grid. In the large configuration,
-input and state CNN widths are $[128,128]$, while aggregation and
+input and state CNN channel widths are $[128,128]$; aggregation and
 readout widths are $64$ and $128$, respectively.
 
 \vspace{-2mm}
@@ -61,33 +60,34 @@ readout widths are $64$ and $128$, respectively.
 \subsection{Loss and Training Schedule}
 \label{sec:loss}
 Training minimizes bitwise \gls{BCE} with an auxiliary
-channel-estimation loss. For coded bit $b\in\{0,1\}$, let $\hat{L}$
-denote the predicted \gls{LLR}, with positive values favoring $b=1$,
-and let $\mathbf{h}$ and $\hat{\mathbf{h}}$ denote the true and
-estimated channel vectors. We minimize
+channel-estimation loss. At iteration $k$, let $\hat{L}^{(k)}$ denote
+the predicted \gls{LLR}, and $\mathbf{h}$ and $\hat{\mathbf{h}}^{(k)}$ denote the
+true and estimated channel vectors. The objective is
 \begin{align}
 \label{eq:bce}
-  \mathcal{L}_{\mathrm{BCE}}
+  \mathcal{L}_{\mathrm{BCE}}^{(k)}
   &= -\mathbb{E}\!\left[
-       b\log\sigma(\hat{L})
-       +(1-b)\log\!\bigl(1-\sigma(\hat{L})\bigr)
+       b\log\sigma(\hat{L}^{(k)})
+       +(1-b)\log\!\bigl(1-\sigma(\hat{L}^{(k)})\bigr)
      \right], \\
 \label{eq:mse}
-  \mathcal{L}_{\mathrm{MSE}}
+  \mathcal{L}_{\mathrm{MSE}}^{(k)}
   &= \mathbb{E}\!\bigl[
-       \|\hat{\mathbf{h}}-\mathbf{h}\|_{2}^{2}
+       \|\hat{\mathbf{h}}^{(k)}-\mathbf{h}\|_{2}^{2}
      \bigr], \\
 \label{eq:total_loss}
   \mathcal{L}
-  &= \mathcal{L}_{\mathrm{BCE}}
-     + \lambda\,\mathcal{L}_{\mathrm{MSE}},
+  &= \sum_{k=1}^{N_{\mathrm{it}}}
+     \left(
+       \mathcal{L}_{\mathrm{BCE}}^{(k)}
+       + \lambda\,\mathcal{L}_{\mathrm{MSE}}^{(k)}
+     \right),
 \end{align}
 where $\sigma$ is the logistic sigmoid, $\mathbb{E}$ averages over data
 bits and channel realizations, and $\lambda>0$ weights the auxiliary
-loss. Both losses are summed across all $N_{\mathrm{it}}$ unrolled
-iterations; $\lambda$ is set to $0.02$ and $0.01$ in successive
-training phases. Training is implemented in Sionna \cite{sionna} using the
-open-source neural receiver of \cite{neural_rx}.
+loss. The coefficient $\lambda$ is set to $0.02$ and $0.01$ in
+successive training phases. Training uses the open-source
+neural-receiver implementation in Sionna \cite{sionna,neural_rx}.
 Each mini-batch contains $N_B{=}128$ samples with random active-user
 counts, velocities in $[0,56]$\,m/s, and rate-adjusted $E_b/N_0$ drawn
 from phase-specific ranges spanning approximately $0$--$15$\,dB. The
