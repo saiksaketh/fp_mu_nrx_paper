@@ -1,20 +1,23 @@
 \begin{table}[t]
-\centering
-\caption{Weight-only QAT vs.\ weight+INT8 asymmetric activation QAT (A8)
-on DoubleTDL-low. W denotes weight-only quantization; W+A8 additionally
-quantizes activations. Gaps $\Delta$ are the $E_b/N_0$ difference
-(W+A8 minus W) at the stated BLER targets.}
-\label{tab:wo_vs_a8}
-\begin{tabular}{lcccc}
-\toprule
- & \multicolumn{2}{c}{$E_b/N_0$ @ $10\%$ (dB)} & \multicolumn{2}{c}{$\Delta$ A8$-$W (dB)} \\
-\cmidrule(lr){2-3}\cmidrule(lr){4-5}
-Format & W-only & W+A8 & $10\%$ & $1\%$ \\
-\midrule
-FP8 (E4M3) & 2.29 & 2.30 & +0.00 & +0.01 \\
-INT8 & 2.27 & 2.31 & +0.04 & +0.04 \\
-FP4 (E2M1) & 3.62 & 3.62 & $-0.01$ & +0.04 \\
-INT4 & 5.46 & 5.29 & $-0.18$ & $-0.44$ \\
-\bottomrule
-\end{tabular}
-\end{table}
+    \centering
+    \caption{Weight-only QAT vs.\ W+A8 on DoubleTDL-low, interpolated from
+    the same paired eval. W is the weight-QAT checkpoint; W+A8 is
+    quantization-aware fine-tuning of that checkpoint with INT8 asymmetric
+    post-\gls{ReLU} activations Table~\ref{tab:sim_params}.
+    $\Delta$ is $E_b/N_0$ of W+A8 minus W.}
+    \label{tab:wo_vs_a8}
+    \begin{tabular}{lcccc}
+    \toprule
+     & \multicolumn{2}{c}{$E_b/N_0$ @ $10\%$ (dB)} & \multicolumn{2}{c}{$\Delta$ A8$-$W (dB)} \\
+    \cmidrule(lr){2-3}\cmidrule(lr){4-5}
+    Format & W-only & W+A8 & $10\%$ & $1\%$ \\
+    \midrule
+    FP8 (E4M3) & 2.29 & 2.30 & +0.00 & +0.01 \\
+    INT8 & 2.24 & 2.31 & +0.08 & +0.01 \\
+    FP4 (E2M1) & 3.62 & 3.62 & +0.00 & $-0.01$ \\
+    INT4$^{\ddagger}$ & 5.60 & 5.29 & $-0.32$ & $-0.33$ \\
+    \bottomrule
+    \end{tabular}\\[2pt]
+    \footnotesize{$^{\ddagger}$For INT4, negative $\Delta$ reflects quantization-aware fine-tuning of the weight-only parent, not a benefit from activation quantization.}
+    \end{table}
+    

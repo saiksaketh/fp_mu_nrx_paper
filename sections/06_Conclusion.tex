@@ -1,19 +1,16 @@
 \vspace{-2mm}
 \section{Conclusion and Future Work}
 \label{conclusion}
-Joint weight--activation \gls{QAT}, optionally with 50\% unstructured
-magnitude pruning, compresses a standard-compliant MU-\gls{MIMO}
-5G~NR neural receiver with negligible radio cost at 8~bits. At
-4~bits, FP4~(E2M1) remains superior to \gls{LS}--\gls{LMMSE} after
-pruning, whereas INT4 does not; the gap tracks the concentration of
-normalized weights near zero and the layer-wise sparsity induced by a
-global magnitude threshold.
+Eight-bit weight--activation \gls{QAT} preserves link performance and
+reduces modeled feature-map traffic in a standard-compliant 5G~NR
+MU-\gls{MIMO} neural receiver. At 4~bits, 50\% pruning changes FP4 by
+at most $0.1$\,dB. FP4 outperforms \gls{LS}--\gls{LMMSE}, whereas INT4
+degrades sharply. Analytically, W4A8+P achieves $66\times$ and
+$8.8\times$ reductions in bit-operations and weight storage,
+respectively. This robustness aligns with FP4's denser near-zero grid
+and lower residual-path sparsity.
 
-The evaluation is restricted to DoubleTDL-low at MCS~14 with
-post-\gls{ReLU} activation quantization; richer MCS sets, higher
-antenna correlation, and larger user loads are left to future work.
-The trained E2M1 codebook already matches the MXFP4 element type
-\cite{ocp2023mx}, so native MXFP4 inference is a packaging task.
-Combining the grid with structured sparsity (e.g., 2:4) is a further
-step toward memory- and compute-efficient neural uplink receivers for
-\gls{6G} \gls{RAN}.
+Future work will co-design layer- and channel-adaptive precision,
+residual-aware 2:4 sparsity, and native MXFP4 block scaling
+\cite{ocp2023mx}, then measure hardware latency and energy across MCS
+and user loads.

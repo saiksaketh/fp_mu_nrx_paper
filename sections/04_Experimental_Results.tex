@@ -14,8 +14,8 @@
 \begin{table}[t]
 \centering
 \caption{System, training, and evaluation parameters.
-Optimizer rows list two sequential Adam phases as
-step count and learning rate.}
+Optimizer rows report the step count and learning rate for two
+successive Adam phases.}
 \label{tab:sim_params}
 \footnotesize
 \setlength{\tabcolsep}{3pt}
@@ -24,7 +24,7 @@ step count and learning rate.}
 Parameter & Value \\
 \midrule
 Users $\times$ layers (eval) & $2\times1$ \\
-Rx antennas : $N_{\mathrm{rx}}$ & 4 \\
+Receive antennas $N_{\mathrm{rx}}$ & 4 \\
 Carrier / SCS & 2.14\,GHz / 30\,kHz \\
 OFDM symbols & 14 \\
 PRBs (train / eval) & 4 / 132 \\
@@ -83,12 +83,13 @@ Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$; then $10^{4}$ at $2{\t
     \begin{subfigure}[t]{0.48\linewidth}
         \centering
         \includegraphics[width=\linewidth]{campaign_su_mu_20260802-134343/figures/mu_tdllow/bler_qat_pruned.pdf}
-        \caption{Weight QAT + 50\% prune}
+        \caption{Weight QAT + 50\% pruning}
         \label{fig:bler_prune}
     \end{subfigure}
-    \caption{\gls{BLER} versus $E_b/N_0$ on DoubleTDL-low for W$b$A8
-    \gls{QAT} (a) and 50\%-pruned weight-\gls{QAT} (b).
-    Formats: FP8~(E4M3), INT8, FP4~(E2M1), INT4.}
+    \caption{\gls{BLER} versus $E_b/N_0$ on DoubleTDL-low for
+    (a) W$b$A8 \gls{QAT} and (b) weight-\gls{QAT} checkpoints after
+    50\% magnitude pruning. Curves show FP8~(E4M3), INT8,
+    FP4~(E2M1), and INT4.}
     \label{fig:BLER}
 \end{figure*}
 
@@ -103,132 +104,127 @@ Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$; then $10^{4}$ at $2{\t
     \begin{subfigure}[t]{0.48\linewidth}
         \centering
         \includegraphics[width=\linewidth]{insight_fp4_sparsity/figures/sparsity_bars.pdf}
-        \caption{Layer-wise sparsity.}
+        \caption{Per-kernel sparsity after global $50\%$ pruning.}
         \label{fig:sparsity_layers}
     \end{subfigure}
-    \caption{Diagnostics of FP4 robustness. Panel~(a) compares
-    per-channel abs-max normalized \texttt{FP32} weight magnitudes
-    with the INT4 and FP4 grids. Panel~(b) shows sparsity induced by
-    global $50\%$ magnitude pruning; shaded rows mark residual state
-    writes, and error bars show standard deviation over eight unrolled
-    iterations.}
+    \caption{FP4 robustness diagnostics. Panel~(a) compares
+    per-channel abs-max-normalized \texttt{FP32} weight magnitudes
+    with the INT4 and FP4 grids. Panel~(b) groups prune-eligible
+    pointwise and dense kernels by \gls{CGNN} stage. Its y-axis labels
+    give $C_{\mathrm{in}}{\to}C_{\mathrm{out}}$. Labels ending in
+    ``state 56'' denote residual state writes. Error bars show the
+    standard deviation across eight unrolled blocks. The Input CNN has
+    one instance.}
     \label{fig:fp4_diagnostics}
 \end{figure*}
 
 \input{campaign_su_mu_20260809-080711/tables/mu_tdllow/wo_vs_a8}
 \input{campaign_su_mu_20260809-080711/tables/mu_tdllow/complexity}
 
-We evaluate three compression dimensions: weight \gls{QAT} at
-FP8~(E4M3), INT8, FP4~(E2M1), and INT4; INT8 asymmetric
-post-\gls{ReLU} activation quantization (W$b$A8); and 50\% magnitude
-pruning of the weight-QAT checkpoints. Evaluation uses the
-3GPP-compliant two-user PUSCH setup and optimizer budgets in
-Table~\ref{tab:sim_params}.
-We report \gls{BLER} versus rate-adjusted $E_b/N_0$ at the $10\%$ and
-$1\%$ operating points. All quantized and pruned receivers are compared
-against the full-precision (\texttt{FP32}) neural receiver, LS channel
-estimation with LMMSE equalization, LMMSE channel estimation with
-K-Best detection, and an ideal K-Best receiver with perfect CSI
-(Fig.~\ref{fig:BLER}). An analytic complexity model of the deployed
-graph complements the radio results.
+We evaluate weight \gls{QAT} with FP8~(E4M3), INT8, FP4~(E2M1), and
+INT4. From each weight-only checkpoint, we separately derive a W$b$A8
+model and a 50\%-pruned model. Experiments use the 3GPP-compliant
+two-user PUSCH setup and optimizer budgets in
+Table~\ref{tab:sim_params}. We report \gls{BLER} versus rate-adjusted $E_b/N_0$ at the $10\%$ and
+$1\%$ operating points. Baselines include the full-precision (\texttt{FP32}) neural receiver,
+LS channel estimation with LMMSE equalization, LMMSE channel
+estimation with K-Best detection, and ideal K-Best detection with
+perfect CSI (Fig.~\ref{fig:BLER}). An analytic model estimates storage
+and bit-operations on the evaluation graph.
 
 \vspace{-2mm}
 
-\subsection{Activation Quantization is Radio-Neutral at 8~Bits}
+\subsection{Activation Quantization is Radio-Neutral on Link Performance at 8~Bits}
 \label{sec:res_a8}
 Figure~\ref{fig:bler_qat} shows \gls{BLER} for the unpruned QAT
-receivers under joint weight+activation fake-quantization; the
-corresponding weight-only operating points are reported in
-Table~\ref{tab:wo_vs_a8}. Eight-bit weight quantization is effectively
-lossless: FP8~(E4M3) and INT8, with or without INT8 asymmetric
-post-\gls{ReLU} activations, match the \texttt{FP32} receiver to within
-$0.05$\,dB at $10\%$ and $1\%$ \gls{BLER}. Relative to LS--LMMSE, both
-8-bit receivers retain an SNR advantage of approximately
-$1.85$--$1.95$\,dB and remain within $\sim$0.2\,dB of LMMSE--K-Best.
-Activation quantization therefore adds the arithmetic and bandwidth
-gains of 8-bit activations without a measurable radio penalty on this
-MU-MIMO link. The pruning study below separately isolates weight
-sparsity using the weight-QAT checkpoints.
+receivers with joint weight and activation quantization.
+Table~\ref{tab:wo_vs_a8} reports the corresponding weight-only
+operating points. FP8~(E4M3) and INT8 W$b$A8 receivers remain within
+$0.05$\,dB of \texttt{FP32} at $10\%$ and $1\%$ \gls{BLER}. Adding A8
+to the weight-only checkpoints changes the required $E_b/N_0$ by at
+most $0.08$\,dB at either target. Both receivers outperform LS--LMMSE
+by approximately $1.83$--$1.91$\,dB and remain within
+$\sim0.2$\,dB of LMMSE--K-Best. Thus, A8 causes no observed link
+penalty in this setting. Section~\ref{sec:res_prune} evaluates pruning
+from separate weight-only checkpoints.
 
 \vspace{-2mm}
 
-\subsection{FP4 QAT vs.\ INT4 QAT}
+\subsection{FP4 versus INT4 Weight QAT}
 \label{sec:res_fp4}
-At 4-bit precision the choice of format dominates
-(Fig.~\ref{fig:bler_qat}, Table~\ref{tab:wo_vs_a8}). FP4~(E2M1) attains
-$10\%$ and $1\%$ \gls{BLER} with an SNR gap of $1.32$\,dB and
-$1.36$\,dB over \texttt{FP32}, while still outperforming LS--LMMSE at
-both targets. INT4 incurs an additional $1.84$\,dB at $10\%$ \gls{BLER}
-and $2.43$\,dB at $1\%$ \gls{BLER} relative to FP4 at identical nominal
-$8\times$ weight compression, and falls behind LS--LMMSE. The
-non-uniform E2M1 grid therefore approximately halves the 4-bit penalty of a
-uniform integer grid. The same FP4--INT4 ordering is preserved under
-W$b$A8.
+For weight-only QAT, the format strongly affects 4-bit performance
+(Table~\ref{tab:wo_vs_a8}). FP4~(E2M1)
+requires $1.32$\,dB and $1.40$\,dB more $E_b/N_0$ than \texttt{FP32}
+at $10\%$ and $1\%$ \gls{BLER}, respectively, while outperforming
+LS--LMMSE at both targets. At the same nominal $8\times$ weight
+compression, INT4 requires an additional $1.98$\,dB and $2.27$\,dB
+relative to FP4, respectively, and trails LS--LMMSE. The nonuniform
+E2M1 grid therefore more than halves the 4-bit SNR penalty at both
+targets. Activation quantization retains FP4's advantage (Fig.~\ref{fig:bler_qat}).
 
-After the same per-channel abs-max normalization used in \gls{QAT}
-\eqref{eq:absmax_scale}, the $404{,}224$ trained \texttt{FP32}
-pointwise and dense weights have excess kurtosis $3.97$
-(Fig.~\ref{fig:weight_hist}). Let $w$ denote one such normalized
-weight. Of these weights, $65\%$ lie below the first
-nonzero INT4 magnitude ($1/7\approx0.14$), while FP4 adds a level at
-$1/12\approx0.08$. The interval $|w|\leq0.25$ contains $79\%$ of the
-weights but only two INT4 magnitudes, including zero, versus four FP4
-magnitudes ($0$, $0.08$, $0.17$, and $0.25$). The E2M1 grid therefore
-resolves the body of the distribution more finely, allowing
-\gls{QAT} to adapt weights to levels unavailable under uniform INT4.
+To examine this gap, we apply the per-channel abs-max normalization in
+\eqref{eq:absmax_scale} to the $0.404$\,M trained \texttt{FP32}
+prune-eligible pointwise and dense weights
+(Fig.~\ref{fig:weight_hist}). For a normalized weight $w$, $65\%$ of
+values satisfy $|w|<1/7\approx0.14$, the first nonzero INT4 magnitude.
+FP4 adds a level at $1/12\approx0.08$. Moreover, $79\%$ of the weights
+satisfy $|w|<0.25$. Over $[0,0.25]$, INT4 provides two magnitudes,
+including zero, whereas FP4 provides four magnitudes
+($0$, $0.08$, $0.17$, and $0.25$). The denser E2M1 grid better
+resolves the distribution body and provides reconstruction levels
+unavailable under uniform INT4.
 \vspace{-2mm}
 
-\subsection{QAT with Magnitude Pruning}
+\subsection{Post-QAT Magnitude Pruning}
 \label{sec:res_prune}
-Figure~\ref{fig:bler_prune} repeats the comparison after 50\% global
-magnitude pruning of pointwise and dense kernels (depthwise and
-readout layers left dense). For 8-bit formats the pruning overhead is
-small ($\lesssim$0.1\,dB at both \gls{BLER} targets), and both pruned
-receivers remain competitive with LMMSE--K-Best. Pruned FP4~(E2M1)
-remains within $0.1$\,dB of unpruned FP4 and ahead of LS--LMMSE:
-once the E2M1 grid has been adapted by \gls{QAT}, 50\% sparsity
-incurs a negligible additional SNR cost. Pruned INT4 degrades by
-approximately $1$\,dB relative to unpruned INT4 and trails LS--LMMSE
-by more than $2$\,dB. Combining 4-bit integer quantization with
-magnitude pruning is therefore unreliable, whereas FP4 \gls{QAT}
-absorbs the same sparsity with negligible radio impact.
+Figure~\ref{fig:bler_prune} shows weight-only checkpoints after 50\%
+global pruning of eligible kernels. Depthwise and readout layers
+remain dense. Penalties use each format's unpruned
+weight-only parent, not panel~(a). At 8~bits, pruning changes the
+required $E_b/N_0$ by at most $0.13$\,dB at either target. FP4 changes
+by $-0.07$/$-0.10$\,dB after pruning and remains ahead of LS--LMMSE.
+In contrast, pruning adds $0.95$--$1.29$\,dB to INT4, which trails
+LS--LMMSE by more than $2$\,dB. Thus, FP4 tolerates either compression
+path, whereas pruned INT4 degrades sharply.
 
-Figure~\ref{fig:sparsity_layers} reports the per-layer sparsity
-realized by a global $50\%$ magnitude threshold. The threshold does
-not produce $50\%$ zeros in every layer: INT4 systematically
-over-prunes the residual writes of width $d_s{=}56$ that close each
-CGNN block onto the skip connection. Update-to-state layers average
-$86.5\%$ zeros (maximum $91.4\%$) under INT4 versus $53.8\%$
-(maximum $66.2\%$) under FP4; the input-to-state layer reaches
-$78.5\%$ and $36.1\%$, respectively. After \gls{QAT}, a large fraction
-of the surviving INT4 coefficients have small magnitude, so the
-$50\%$ sparsity budget is realized predominantly by zeroing
-residual-path coefficients. On the same layers, FP4 sparsity is
-comparable to INT8, indicating that the 4-bit microformat preserves a
-magnitude profile that the global threshold does not thin
-disproportionately. Combined with the coarse INT4 body grid of
-Fig.~\ref{fig:weight_hist}, this
-accounts for the \gls{BLER} degradation of pruned INT4, whereas
-pruned FP4 remains within $0.1$\,dB of unpruned FP4.
+Figure~\ref{fig:sparsity_layers} reports the fraction of weights
+zeroed in each labeled kernel. The global 50\% target applies over all
+eligible coefficients, not per kernel. Under INT4, residual
+update-to-state kernels average $86.5\%$ zeros (maximum $91.4\%$),
+compared with $53.8\%$ (maximum $66.2\%$) under FP4. The Input CNN
+state-write kernel reaches $78.5\%$ and $36.1\%$, respectively. Thus,
+INT4 concentrates pruning in residual paths, while FP4 sparsity
+remains comparable to INT8. Together with the denser near-zero FP4
+grid in Fig.~\ref{fig:weight_hist}, this pattern is consistent with
+FP4's higher pruning robustness.
 
-Table~\ref{tab:complexity} summarizes the cost of the joint stack on
-the instantiated evaluation graph (132~\glspl{PRB}, 2~users,
-8 iterations). The receiver performs $19.22$\,G\,\glspl{MAC} per slot,
-of which $76\%$ come from $1{\times}1$ pointwise convolutions, the
-dominant GEMM-like kernels targeted by low-bit quantization.
-With INT8 asymmetric activations, 8-bit weights reduce bit-operations
-by $16\times$ and the real weight footprint by $3.8\times$; 4-bit
-weights reach $7.1\times$ compression, with a further reduction in
-storage and \glspl{BOP} under 50\% magnitude pruning. Thus the joint
-stack delivers substantial analytic reductions in weight storage,
-activation volume, and bit-operations while retaining
-near-\texttt{FP32} \gls{BLER} at 8~bits.
+Table~\ref{tab:complexity} reports analytic costs on the evaluation
+graph with 132~\glspl{PRB}, 2~users, and 8 iterations. Each slot
+requires $19.22$\,G multiply--accumulate operations (MACs).
+Of these, $76\%$ arise from $1{\times}1$ pointwise convolutions, the
+dominant GEMM-like kernels targeted by low-bit quantization. We
+estimate \glspl{BOP} as
+\[
+  \mathrm{BOPs}
+  = \sum_{\ell}\mathrm{MAC}_{\ell}\,b_{w,\ell}b_{a,\ell},
+\]
+where $b_{w,\ell}$ and $b_{a,\ell}$ are the weight and activation
+widths of layer $\ell$. For eligible pruned kernels,
+$\mathrm{MAC}_{\ell}$ is scaled by the retained-weight fraction.
+
+Relative to \texttt{FP32}, W8A8 and W4A8 reduce \glspl{BOP} by
+$16\times$ and $33\times$, respectively, and reduce stored weight
+footprints by $3.8\times$ and $7.1\times$. The modeled W4A8+P
+configuration yields $66\times$ and $8.8\times$ reductions in
+\glspl{BOP} and weight footprint, respectively. The radio experiments
+evaluate W$b$A8 and pruning separately, whereas the +P rows project
+their combined analytic cost.
 
 \begin{comment}
 Numeric operating points retained for recovery (log-linear interpolation).
-Weight-only 10\%/1\% BLER (dB): FP32 2.30/3.58; FP8 2.29/3.52; INT8 2.27/3.48;
-FP4 3.62/4.93; INT4 5.46/7.36. LS--LMMSE 4.14/5.43.
-WbA8 10\%: FP8 2.30, INT8 2.31, FP4 3.62, INT4 5.29.
+Weight-only 10\%/1\% BLER (dB): FP32 2.30/3.58; FP8 2.29/3.52; INT8 2.24/3.51;
+FP4 3.62/4.98; INT4 5.60/7.25. LS--LMMSE 4.14/5.43.
+WbA8 10\%/1\%: FP8 2.30/3.53; INT8 2.31/3.52; FP4 3.62/4.97; INT4 5.29/6.92.
 Pruned 10\%/1\%: FP8 2.37/3.59; INT8 2.36/3.61; FP4 3.55/4.83; INT4 6.41/8.65.
 Complexity rows: see Table~\ref{tab:complexity}; activation traffic 683 MiB
 FP32 feature maps/slot vs.\ 1.7 MiB weight store.

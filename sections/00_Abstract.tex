@@ -2,7 +2,7 @@
 Efficient neural-receiver deployment demands lower memory traffic and computation without sacrificing link performance.
 We compress a standard-compliant 5G~NR \gls{MU}-\gls{MIMO} neural receiver using weight--activation \gls{QAT} and, separately, magnitude pruning.
 We evaluate post-\gls{ReLU} INT8 activation quantization and $50\%$ pruning with INT8/INT4 and FP8~(E4M3)/FP4~(E2M1) weights.
-On a two-user DoubleTDL-low uplink, 8-bit weight--activation models stay within $0.05$\,dB of \texttt{FP32}; activation quantization adds at most $0.04$\,dB at both \gls{BLER} targets.
+On a two-user DoubleTDL-low uplink, 8-bit weight--activation models stay within $0.05$\,dB of \texttt{FP32}; activation quantization adds at most $0.08$\,dB at both \gls{BLER} targets.
 Analytically, pruned 4-bit inference achieves $66\times$ bit-operation and $8.8\times$ weight-footprint reductions.
 FP4 trails \texttt{FP32} by $\sim1.3$\,dB yet outperforms LS--LMMSE before and after pruning, with at most $0.1$\,dB pruning penalty.
 This aligns with FP4's denser near-zero grid and lower residual-path sparsity.
