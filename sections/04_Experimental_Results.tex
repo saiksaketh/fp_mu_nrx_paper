@@ -87,9 +87,8 @@ Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$; then $10^{4}$ at $2{\t
         \label{fig:bler_prune}
     \end{subfigure}
     \caption{\gls{BLER} versus $E_b/N_0$ on DoubleTDL-low for
-    (a) W$b$A8 \gls{QAT} and (b) weight-\gls{QAT} checkpoints after
-    50\% magnitude pruning. Curves show FP8~(E4M3), INT8,
-    FP4~(E2M1), and INT4.}
+    (a) W$b$A8 \gls{QAT}, where $b\in\{4,8\}$ denotes the weight bit
+    width, and (b) 50\%-pruned weight-\gls{QAT} checkpoints.}
     \label{fig:BLER}
 \end{figure*}
 
@@ -109,8 +108,8 @@ Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$; then $10^{4}$ at $2{\t
     \end{subfigure}
     \caption{FP4 robustness diagnostics. Panel~(a) compares
     per-channel abs-max-normalized \texttt{FP32} weight magnitudes
-    with the INT4 and FP4 grids. Panel~(b) groups prune-eligible
-    pointwise and dense kernels by \gls{CGNN} stage. Its y-axis labels
+    with the INT4 and FP4 grids. Panel~(b) groups kernel sparsity by
+    \gls{CGNN} stage after global $50\%$ pruning. Its y-axis labels
     give $C_{\mathrm{in}}{\to}C_{\mathrm{out}}$. Labels ending in
     ``state 56'' denote residual state writes. Error bars show the
     standard deviation across eight unrolled blocks. The Input CNN has
@@ -184,8 +183,8 @@ weight-only parent, not panel~(a). At 8~bits, pruning changes the
 required $E_b/N_0$ by at most $0.13$\,dB at either target. FP4 changes
 by $-0.07$/$-0.10$\,dB after pruning and remains ahead of LS--LMMSE.
 In contrast, pruning adds $0.95$--$1.29$\,dB to INT4, which trails
-LS--LMMSE by more than $2$\,dB. Thus, FP4 tolerates either compression
-path, whereas pruned INT4 degrades sharply.
+LS--LMMSE by more than $2$\,dB. \emph{Thus, FP4 tolerates 50\% pruning
+with negligible radio impact, whereas INT4 with pruning degrades sharply.}
 
 Figure~\ref{fig:sparsity_layers} reports the fraction of weights
 zeroed in each labeled kernel. The global 50\% target applies over all
