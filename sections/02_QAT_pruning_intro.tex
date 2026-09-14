@@ -66,25 +66,25 @@ let $\hat{L}^{(k)}$ denote the predicted \gls{LLR}, with positive
 values favoring $b{=}1$, and let $\mathbf{h}$ and $\hat{\mathbf{h}}^{(k)}$
 denote the true and estimated channel vectors. The objective is
 \begin{align}
-\label{eq:bce}
-  \mathcal{L}_{\mathrm{BCE}}^{(k)}
-  &= -\mathbb{E}\!\left[
-       b\log\sigma(\hat{L}^{(k)})
-       +(1-b)\log\!\bigl(1-\sigma(\hat{L}^{(k)})\bigr)
-     \right], \\
-\label{eq:mse}
-  \mathcal{L}_{\mathrm{MSE}}^{(k)}
-  &= \mathbb{E}\!\bigl[
-       \|\hat{\mathbf{h}}^{(k)}-\mathbf{h}\|_{2}^{2}
-     \bigr], \\
-\label{eq:total_loss}
-  \mathcal{L}
-  &= \sum_{k=1}^{N_{\mathrm{it}}}
-     \left(
-       \mathcal{L}_{\mathrm{BCE}}^{(k)}
-       + \lambda\,\mathcal{L}_{\mathrm{MSE}}^{(k)}
-     \right),
-\end{align}
+  \label{eq:total_loss}
+    \mathcal{L}
+    &= \sum_{k=1}^{N_{\mathrm{it}}}
+       \left(
+         \mathcal{L}_{\mathrm{BCE}}^{(k)}
+         + \lambda\,\mathcal{L}_{\mathrm{MSE}}^{(k)}
+       \right), \\
+  \label{eq:bce}
+    \mathcal{L}_{\mathrm{BCE}}^{(k)}
+    &= -\mathbb{E}\!\left[
+         b\log\sigma(\hat{L}^{(k)})
+         +(1-b)\log\!\bigl(1-\sigma(\hat{L}^{(k)})\bigr)
+       \right], \\
+  \label{eq:mse}
+    \mathcal{L}_{\mathrm{MSE}}^{(k)}
+    &= \mathbb{E}\!\bigl[
+         \|\hat{\mathbf{h}}^{(k)}-\mathbf{h}\|_{2}^{2}
+       \bigr],
+  \end{align}
 where $\sigma$ is the logistic sigmoid, $\mathbb{E}$ averages over data
 bits and channel realizations, and $\lambda>0$ weights the auxiliary
 loss. The coefficient $\lambda$ is set to $0.02$ and $0.01$ in

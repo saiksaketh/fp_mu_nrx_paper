@@ -18,8 +18,8 @@ quantization preserves link performance and whether sparse 4-bit
 weights favor integer or floating-point microformats in
 standard-compliant \gls{MU}-\gls{MIMO} reception.
 
-We separately evaluate weight--activation \gls{QAT} and $50\%$
-unstructured pruning. We show negligible SNR penalty from 8-bit
-activations and FP4 robustness to pruning, explain the FP4--INT4 gap
-through normalized weight distributions and residual-path sparsity,
-and quantify storage, activation traffic, and bit-operations analytically.
+We assess weight--activation \gls{QAT} and $50\%$ unstructured pruning
+separately. Eight-bit activations incur negligible SNR penalty, while
+FP4 remains robust under pruning. Normalized weight distributions and
+residual-path sparsity explain FP4's advantage over INT4. An analytic
+model quantifies storage, activation traffic, and bit-operations.

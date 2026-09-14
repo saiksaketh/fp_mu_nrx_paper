@@ -5,12 +5,12 @@ Eight-bit weight--activation \gls{QAT} preserves link performance and
 reduces modeled feature-map traffic in a standard-compliant 5G~NR
 MU-\gls{MIMO} neural receiver. At 4~bits, 50\% pruning changes FP4 by
 at most $0.1$\,dB. FP4 outperforms \gls{LS}--\gls{LMMSE}, whereas INT4
-degrades sharply. Analytically, W4A8+P achieves $66\times$ and
+performs poorly. Analytically, the weight-activation quantization followed by pruning achieves $66\times$ and
 $8.8\times$ reductions in bit-operations and weight storage,
 respectively. This robustness aligns with FP4's denser near-zero grid
 and lower residual-path sparsity.
 
-Future work will co-design layer- and channel-adaptive precision,
+Future work aims at co-designing both layer and channel adaptive precision,
 residual-aware 2:4 sparsity, and native MXFP4 block scaling
 \cite{ocp2023mx}, then measure hardware latency and energy across MCS
 and user loads.
