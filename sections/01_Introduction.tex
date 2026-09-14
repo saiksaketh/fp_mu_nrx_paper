@@ -6,7 +6,10 @@ demapping and can improve \gls{BLER} over conventional pipelines
 implementation has been demonstrated \cite{wiesmayr2024design}, model-driven variants
 reduce computation and parameter counts \cite{mahdi_mdx}, and
 fine-tuning on 5G~NR measurements mitigates sim-to-real mismatch
-\cite{nuri_reinhard_spawc}. \glspl{GPU} provide programmable, adaptive,
+\cite{nuri_reinhard_spawc}. Over-the-air tests on a custom
+single-antenna software-defined radio (SDR) show that a synthetically
+trained neural receiver generalizes to real measurements and improves
+when the training channels match the site \cite{riku_ota}. \glspl{GPU} provide programmable, adaptive,
 real-time RAN compute; the reported neural receiver requires
 $\sim26$\,TFLOP/s, motivating
 quantization to reduce storage, traffic, and bit-operation complexity
