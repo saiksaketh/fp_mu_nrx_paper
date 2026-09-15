@@ -18,14 +18,14 @@ received vector at subcarrier $s$ and OFDM symbol $t$ is
 \label{eq:mu_mimo}
   \mathbf{y}_{s,t}
   = \sum_{u=1}^{U}
-    \mathbf{H}_{s,t,u}\,x_{s,t,u}
+    \mathbf{h}_{s,t,u}\,x_{s,t,u}
     + \mathbf{n}_{s,t},
   \qquad
   \mathbf{n}_{s,t}\sim\mathcal{CN}(\mathbf{0},N_0\mathbf{I}_{N_{\mathrm{rx}}}),
 \end{equation}
 where $u$ indexes the \glspl{UE},
 $x_{s,t,u}\in\mathbb{C}$ is the symbol transmitted by UE $u$,
-$\mathbf{H}_{s,t,u}\in\mathbb{C}^{N_{\mathrm{rx}}}$ is the corresponding channel vector, and
+$\mathbf{h}_{s,t,u}\in\mathbb{C}^{N_{\mathrm{rx}}}$ is the corresponding channel vector, and
 $\mathbf{y}_{s,t},\mathbf{n}_{s,t}\in\mathbb{C}^{N_{\mathrm{rx}}}$ are the received
 and noise vectors, respectively. Here, $\mathcal{CN}$ denotes a
 circularly symmetric complex Gaussian distribution, $N_0$ is the noise
