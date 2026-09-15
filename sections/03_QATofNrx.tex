@@ -1,20 +1,72 @@
-\section{Proposed Quantization-Aware MU-MIMO Neural Receiver}
+\section{Quantization-Aware Training and Pruning for MU-MIMO Neural Receivers}
 \label{sec:nrx_qat}
 
-\subsection{Weight and Activation Quantization}
+\subsection{Weight Fake Quantization}
+\label{sec:fake_quant}
+Let $\mathbf{W}$ denote a kernel (convolutional or dense) and let
+$\mathcal{G}\subset\mathbb{R}$ be a finite quantization grid with
+maximum magnitude $g_{\max}=\max_{g\in\mathcal{G}}|g|$. We use
+\emph{per-channel abs-max} scaling along the output-channel axis:
+indices $c$ and $i$ denote an output channel and a coefficient within
+that channel, respectively.
+\begin{align}
+  s_c &= \frac{\max_{i}\,|W_{i,c}|}{g_{\max}},
+  \label{eq:absmax_scale}\\
+  \widehat{W}_{i,c}
+  &=s_c\cdot\mathrm{round}_{\mathcal{G}}\!\bigl(W_{i,c}/s_c\bigr),
+  \label{eq:fake_quant}
+\end{align}
+where $\mathrm{round}_{\mathcal{G}}(\cdot)$ maps to the nearest
+element of $\mathcal{G}$. %All-zero channels use $s_c=1$.
+
+Following prior weight-\gls{QAT}, the forward pass uses fake-quantized
+weights, while an \gls{STE} updates a full-precision master copy
+\cite{understanding_STE}.
+Abs-max \gls{PTQ} quantizes a frozen \texttt{FP32} checkpoint once
+\cite{saketh_asilomar25}. Here, \eqref{eq:absmax_scale} is recomputed
+from current master weights every training step, allowing adaptation
+to rounding and nonuniform floating-point reconstruction levels.
+Biases use the corresponding weight format. For INT$b$,
+$b\in\{4,8\}$, the symmetric narrow-range grid is
+$\mathcal{G}_{\mathrm{INT}b}=\{-g_{\max},\ldots,g_{\max}\}$, where
+$g_{\max}=2^{b-1}-1$.
+
+\vspace{-2mm}
+
+\subsection{Floating-Point Microformats: FP8 and FP4}
+\label{sec:fp_micro}
+Unlike uniform integer grids, low-bit floating-point formats allocate
+resolution nonuniformly, with denser levels near zero and wider dynamic
+range \cite{micikevicius2022fp8,rouhani2023microscaling}. We use the
+OCP E4M3 and E2M1 element formats \cite{ocp2023mx}. FP8~(E4M3) assigns
+one sign, four exponent, and three mantissa bits, with maximum finite
+magnitude $g_{\max}=448$. FP4~(E2M1) assigns one sign, two exponent,
+and one mantissa bit, yielding the fifteen-level grid
+\begin{equation}
+\label{eq:fp4_grid}
+  \mathcal{G}_{\mathrm{E2M1}}
+  = \{0,\pm0.5,\pm1,\pm1.5,\pm2,\pm3,\pm4,\pm6\},
+\end{equation}
+where $g_{\max}=6$. E2M1 and INT4 both provide nominal $8\times$
+weight compression relative to \texttt{FP32}, but differ in grid
+spacing. All formats use the same abs-max scaling
+\eqref{eq:absmax_scale} and \gls{STE} during \gls{QAT}.
+
+\vspace{-2mm}
+
+\subsection{Activation Quantization}
 \label{sec:act_quant}
 All convolutional and dense kernels (depthwise, pointwise,
 aggregation, and readout) use \eqref{eq:fake_quant} with the INT8,
-INT4, FP8~(E4M3), or FP4~(E2M1) grids defined in
-Section~\ref{sec:qat_pruning}. Biases use the corresponding weight
-format. For a
+INT4, FP8~(E4M3), or FP4~(E2M1) grids. For a
 post-\gls{ReLU} tensor $\mathbf{a}$, nonnegativity permits all 256
 unsigned INT8 codes over $[0,\max(\mathbf{a})]$. The per-tensor scale
 and fake-quantized activation are
 $\Delta_a=\max(\mathbf{a})/255$ and
 $\widehat{\mathbf{a}}=\Delta_a\operatorname{round}(\mathbf{a}/\Delta_a)$,
-respectively \cite{jacob2018quantization}. Network inputs and LLR/channel heads remain in
-\texttt{FP32}. Joint weight and activation fake quantization lets
+respectively \cite{jacob2018quantization}. All-zero tensors use
+$\Delta_a=1$. Network inputs, LLR outputs, and channel-estimation
+outputs remain in \texttt{FP32}. Joint weight and activation fake quantization lets
 training adapt to both quantization errors. W$b$A8 denotes $b$-bit
 weights with INT8 post-\gls{ReLU} activations.
 
@@ -23,7 +75,7 @@ weights with INT8 post-\gls{ReLU} activations.
 \subsection{Unstructured Magnitude Pruning}
 \label{sec:pruning}
 After weight \gls{QAT} converges, global magnitude pruning targets
-pointwise-convolution, aggregation, and non-readout dense kernels.
+pointwise convolution, aggregation, and non-readout dense kernels.
 Depthwise and readout kernels remain dense
 \cite{song_han_1,kuzmin2023pruning}. Let $\mathcal{T}$ index eligible
 coefficients, $W_i$ denote coefficient $i$, and $M_i$ its binary keep

@@ -94,13 +94,13 @@ Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$; then $10^{4}$ at $2{\t
 
 \begin{figure*}[t]
     \centering
-    \begin{subfigure}[t]{0.48\linewidth}
+    \begin{subfigure}[t]{0.40\linewidth}
         \centering
         \includegraphics[width=\linewidth]{insight_fp4_sparsity/figures/weight_histogram_zoom.pdf}
         \caption{Normalized weight histogram.}
         \label{fig:weight_hist}
     \end{subfigure}\hfill
-    \begin{subfigure}[t]{0.48\linewidth}
+    \begin{subfigure}[t]{0.43\linewidth}
         \centering
         \includegraphics[width=\linewidth]{insight_fp4_sparsity/figures/sparsity_bars.pdf}
         \caption{Per-kernel sparsity after global $50\%$ pruning.}
@@ -143,7 +143,9 @@ $0.05$\,dB of \texttt{FP32} at $10\%$ and $1\%$ \gls{BLER}. Adding A8
 to the weight-only checkpoints changes the required $E_b/N_0$ by at
 most $0.08$\,dB at either target. Both receivers outperform LS--LMMSE
 by approximately $1.83$--$1.91$\,dB and remain within
-$\sim0.2$\,dB of LMMSE--K-Best. Thus, A8 causes no observed link
+$\sim0.2$\,dB of LMMSE--K-Best.\footnote{LS--LMMSE and LMMSE--K-Best use
+floating-point arithmetic. Fixed-point arithmetic may increase
+\gls{BLER} due to additional quantization error.} Thus, A8 causes no observed link
 penalty in this setting. Section~\ref{sec:res_prune} evaluates pruning
 from separate weight-only checkpoints.
 
@@ -172,6 +174,7 @@ including zero, whereas FP4 provides four magnitudes
 ($0$, $0.08$, $0.17$, and $0.25$). The denser E2M1 grid better
 resolves the distribution body and provides reconstruction levels
 unavailable under uniform INT4.
+
 \vspace{-2mm}
 
 \subsection{Post-QAT Magnitude Pruning}

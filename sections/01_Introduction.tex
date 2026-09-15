@@ -3,26 +3,37 @@
 Neural receivers jointly learn channel estimation, equalization, and
 demapping and can improve \gls{BLER} over conventional pipelines
 \cite{scamnrx,deeprx_mimo_icc}. A standard-compliant real-time
-implementation has been demonstrated \cite{wiesmayr2024design}, model-driven variants
-reduce computation and parameter counts \cite{mahdi_mdx}, and
-fine-tuning on 5G~NR measurements mitigates sim-to-real mismatch
-\cite{nuri_reinhard_spawc}. Over-the-air tests on a custom
-single-antenna software-defined radio (SDR) show that a synthetically
-trained neural receiver generalizes to real measurements and improves
-when the training channels match the site \cite{riku_ota}. \glspl{GPU} provide programmable, adaptive,
-real-time RAN compute; the reported neural receiver requires
-$\sim26$\,TFLOP/s, motivating
-quantization to reduce storage, traffic, and bit-operation complexity
-\cite{ran_accelerated_compute_reinhard}.
-Integer \gls{QAT} approaches
-full-precision neural-receiver performance at 4~bits \cite{saketh_qat}.
-We address two questions: whether post-\gls{ReLU} activation
-quantization preserves link performance and whether sparse 4-bit
-weights favor integer or floating-point microformats in
-standard-compliant \gls{MU}-\gls{MIMO} reception.
+implementation has been demonstrated \cite{wiesmayr2024design}.
+Model-driven variants reduce computation and parameters
+\cite{mahdi_mdx}. Fine-tuning on 5G~NR measurements mitigates
+sim-to-real mismatch \cite{nuri_reinhard_spawc}. Over-the-air tests
+show simulation-trained receivers transfer to single-antenna
+software-defined radios and improve with site-matched training
+\cite{riku_ota}. \glspl{GPU} provide adaptive real-time RAN compute,
+but a reported neural receiver requires
+$\sim26$\,TFLOP/s, motivating quantization to reduce storage, traffic,
+and bit-operation complexity \cite{ran_accelerated_compute_reinhard, park_simd}.
 
-We assess weight--activation \gls{QAT} and $50\%$ unstructured pruning
-separately. Eight-bit activations incur negligible SNR penalty, while
-FP4 remains robust under pruning. Normalized weight distributions and
-residual-path sparsity explain FP4's advantage over INT4. An analytic
-model quantifies storage, activation traffic, and bit-operations.
+Prior integer weight-only \gls{QAT} for a \gls{SIMO} convolutional
+receiver substantially improves over \gls{PTQ}, but uses uniform grids
+and full-precision activations \cite{saketh_qat}. That study omits
+post-\gls{ReLU} activation quantization, unstructured pruning, floating-point microformats, and standard-compliant
+\gls{MU}-\gls{MIMO} reception. We compress the standard-compliant
+convolutional graph neural receiver from prior work
+\cite{scamnrx,wiesmayr2024design}. At the same nominal 4-bit weight
+budget, OCP E2M1
+(FP4) places reconstruction levels more densely near zero, whereas
+INT4 uses uniform bins \cite{ocp2023mx}. We analyze whether this advantage
+persists under INT8 activation quantization or global pruning and
+analyze the resulting residual-kernel sparsity.
+
+Our contributions are threefold:
+\begin{itemize}
+  \item Adding INT8 post-\gls{ReLU} activation quantization to 8-bit
+    weight-\gls{QAT} models changes the required $E_b/N_0$ by at most
+    $0.08$\,dB.
+  \item At 4~bits, FP4~(E2M1) outperforms INT4 before and after $50\%$
+    unstructured pruning.
+  \item An analytic model quantifies weight storage and bit-operations.
+\end{itemize}
+Weight--activation \gls{QAT} and pruning are evaluated separately.
