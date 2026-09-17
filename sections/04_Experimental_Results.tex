@@ -32,8 +32,7 @@ MCS / code rate $R$ (Table~1 \cite{3gpp38214})
   & index 14 / $R\approx0.48$ (16-QAM) \\
 DMRS & type~1, mapping~A, +1 position \\
 Channel (train) & 3GPP UMi, speeds $[0,56]$\,m/s \\
-Channel (eval) & DoubleTDL-low \cite{scamnrx}: \\
- & UE1 TDL-B100/400 ($100$\,ns, $400$\,Hz) \\
+Channel (eval) & UE1 TDL-B100/400 ($100$\,ns, $400$\,Hz) \cite{scamnrx} \\
  & UE2 TDL-C300/100 ($300$\,ns, $100$\,Hz) \\
 NRX depth $N_{\mathrm{it}}$ / state width $d_s$ & 8 / 56 \\
 Batch size $N_B$ & 128 \\
@@ -52,7 +51,7 @@ Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$; then $10^{4}$ at $2{\t
     \begin{subfigure}[t]{0.48\linewidth}
         \centering
         \includegraphics[width=\linewidth]{campaign_su_mu_20260809-080711/figures/mu_tdllow/bler_qat_activation.pdf}
-        \caption{Weight+A8 QAT (MU-MIMO, DoubleTDL-low, $U{=}2$, 16-QAM)}
+        \caption{Weight+A8 QAT (MU-MIMO, TDL-B/C, $U{=}2$, 16-QAM)}
         \label{fig:bler_qat}
     \end{subfigure}\hfill
     \begin{subfigure}[t]{0.48\linewidth}
@@ -61,8 +60,8 @@ Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$; then $10^{4}$ at $2{\t
         \caption{Weight QAT + 50\% magnitude pruning}
         \label{fig:bler_prune}
     \end{subfigure}
-    \caption{BLER vs.\ $E_b/N_0$ for the neural receiver on DoubleTDL-low
-    (UE1: TDL-B100/400, UE2: TDL-C300/100).
+    \caption{BLER vs.\ $E_b/N_0$ for the neural receiver on
+    TDL-B100/400 (UE1) and TDL-C300/100 (UE2).
     Both panels share the same axes and baseline curves (FP32, LS--LMMSE,
     LMMSE--K-Best, perfect-CSI K-Best). Panel~(a) shows joint weight and
     INT8 asymmetric post-\gls{ReLU} activation \gls{QAT} (W$b$A8) in
@@ -86,7 +85,7 @@ Prune recovery & $5{\times}10^{3}$ at $5{\times}10^{-5}$; then $10^{4}$ at $2{\t
         \caption{Weight QAT + 50\% pruning}
         \label{fig:bler_prune}
     \end{subfigure}
-    \caption{\gls{BLER} versus $E_b/N_0$ on DoubleTDL-low for
+    \caption{\gls{BLER} versus $E_b/N_0$ on TDL-B100/400 \& TDL-C300/100 for
     (a) W$b$A8 \gls{QAT}, where $b\in\{4,8\}$ denotes the weight bit
     width, and (b) 50\%-pruned weight-\gls{QAT} checkpoints.}
     \label{fig:BLER}
