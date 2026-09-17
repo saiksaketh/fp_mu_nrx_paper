@@ -3,7 +3,7 @@
 Neural receivers jointly learn channel estimation, equalization, and
 demapping and can improve \gls{BLER} over conventional pipelines
 \cite{scamnrx,deeprx_mimo_icc}. A standard-compliant real-time
-implementation has been demonstrated \cite{wiesmayr2024design}.
+implementation has been demonstrated in \cite{wiesmayr2024design}.
 Model-driven variants reduce computation and parameters
 \cite{mahdi_mdx}. Fine-tuning on 5G~NR measurements mitigates
 sim-to-real mismatch \cite{nuri_reinhard_spawc}. Over-the-air tests
@@ -19,7 +19,7 @@ receiver substantially improves over \gls{PTQ}, but uses uniform grids
 and full-precision activations \cite{saketh_qat}. That study omits
 post-\gls{ReLU} activation quantization, unstructured pruning, floating-point microformats, and standard-compliant
 \gls{MU}-\gls{MIMO} reception. We compress the standard-compliant
-convolutional graph neural receiver from prior work
+convolutional graph neural network receiver from prior work
 \cite{scamnrx,wiesmayr2024design}. At the same nominal 4-bit weight
 budget, OCP E2M1
 (FP4) places reconstruction levels more densely near zero, whereas
