@@ -1,31 +1,32 @@
 \section{Introduction}
 \label{sec:intro}
 Neural receivers jointly learn channel estimation, equalization, and
-demapping and can improve \gls{BLER} over conventional pipelines
-\cite{scamnrx,deeprx_mimo_icc}. A standard-compliant real-time
-implementation has been demonstrated in \cite{wiesmayr2024design}.
-Model-driven variants reduce computation and parameters
-\cite{mahdi_mdx}. Fine-tuning on 5G~NR measurements mitigates
-sim-to-real mismatch \cite{nuri_reinhard_spawc}. Over-the-air tests
-show simulation-trained receivers transfer to single-antenna
-software-defined radios and improve with site-matched training
-\cite{riku_ota}. \glspl{GPU} provide adaptive real-time RAN compute,
-but a reported neural receiver requires
+demapping, improving \gls{BLER} over conventional pipelines
+\cite{scamnrx,deeprx_mimo_icc}. Model-driven variants reduce
+computation and parameters \cite{mahdi_mdx}. A standard-compliant
+implementation already runs in real time \cite{wiesmayr2024design}.
+Fine-tuning on 5G~NR measurements mitigates sim-to-real mismatch
+\cite{nuri_reinhard_spawc}. Over-the-air tests confirm that
+simulation-trained receivers transfer to single-antenna
+software-defined radios, improving with site-matched training
+\cite{riku_ota}. Deployment relies on \glspl{GPU} for real-time RAN
+compute, yet a reported neural receiver requires
 $\sim26$\,TFLOP/s, motivating quantization to reduce storage, traffic,
 and bit-operation complexity \cite{ran_accelerated_compute_reinhard, park_simd}.
 
 Prior integer weight-only \gls{QAT} for a \gls{SIMO} convolutional
-receiver substantially improves over \gls{PTQ}, but uses uniform grids
+receiver improves substantially over \gls{PTQ}, but uses uniform grids
 and full-precision activations \cite{saketh_qat}. That study omits
 post-\gls{ReLU} activation quantization, unstructured pruning, floating-point microformats, and standard-compliant
-\gls{MU}-\gls{MIMO} reception. We compress the standard-compliant
-convolutional graph neural network receiver from prior work
-\cite{scamnrx,wiesmayr2024design}. At the same nominal 4-bit weight
+\gls{MU}-\gls{MIMO} reception. At the same nominal 4-bit weight
 budget, OCP E2M1
 (FP4) places reconstruction levels more densely near zero, whereas
-INT4 uses uniform bins \cite{ocp2023mx}. We analyze whether this advantage
-persists under INT8 activation quantization or global pruning and
-analyze the resulting residual-kernel sparsity.
+INT4 uses uniform bins \cite{ocp2023mx}. We therefore compress the
+standard-compliant receiver from prior work, whose layers combine a
+graph neural network (GNN) and convolutional neural networks (CNNs)
+\cite{scamnrx,wiesmayr2024design}. We test whether the FP4
+advantage persists under INT8 activation quantization or global
+pruning, and characterize residual-kernel sparsity.
 
 Our contributions are threefold:
 \begin{itemize}

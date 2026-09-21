@@ -34,9 +34,9 @@ conventional 5G~NR decoding.
 
 \subsection{Neural Receiver Architecture}
 \label{sec:architecture}
-We adopt the \gls{CGNN} architecture for MU-\gls{MIMO}
+We adopt this GNN--CNN architecture for MU-\gls{MIMO}
 \gls{PUSCH} reception \cite{scamnrx,wiesmayr2024design,neural_rx}. Each resource element has 18
-input features. An input convolutional neural network (CNN) with
+input features. An input CNN with
 channel sequence $18{\to}128{\to}128{\to}56$ initializes a state of
 dimension $d_s{=}56$. Each of the $N_{\mathrm{it}}{=}8$ unrolled
 blocks applies a $56{\to}64{\to}56$ user-mixing \gls{MLP} and a
