@@ -87,5 +87,5 @@ neural-receiver implementation in Sionna \cite{sionna,neural_rx}.
 Each mini-batch contains $N_B{=}128$ samples with random active-user
 counts, velocities in $[0,56]$\,m/s, and rate-adjusted $E_b/N_0$ drawn
 from phase-specific ranges spanning approximately $0$--$15$\,dB. The
-\texttt{FP32} baseline is trained with Adam; quantized models
-warm-start from that checkpoint.
+\texttt{FP32} baseline is trained with Adam quantized models
+warm-start from that checkpoint \cite{kingma2014adam}.

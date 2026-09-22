@@ -122,8 +122,8 @@ We evaluate weight \gls{QAT} with FP8~(E4M3), INT8, FP4~(E2M1), and
 INT4. From each weight-only checkpoint, we separately derive a W$b$A8
 model and a 50\%-pruned model. Experiments use the 3GPP-compliant
 two-user PUSCH setup and optimizer budgets in
-Table~\ref{tab:sim_params}. We report \gls{BLER} versus rate-adjusted $E_b/N_0$ at the $10\%$ and
-$1\%$ operating points. Baselines include the full-precision (\texttt{FP32}) neural receiver,
+Table~\ref{tab:sim_params}. We report \gls{BLER} versus rate-adjusted $E_b/N_0$ at $10\%$ and
+$1\%$ targets. Baselines include the full-precision (\texttt{FP32}) neural receiver,
 LS channel estimation with \gls{LMMSE} equalization, \gls{LMMSE} channel
 estimation with K-Best detection, and ideal K-Best detection with
 perfect CSI (Fig.~\ref{fig:BLER}). An analytic model estimates storage
@@ -145,7 +145,7 @@ $\sim0.2$\,dB of \gls{LMMSE}--K-Best.\footnote{LS--\gls{LMMSE} and \gls{LMMSE}--
 floating-point arithmetic. Fixed-point arithmetic may increase
 \gls{BLER} due to additional quantization error.} Thus, A8 causes no observed link
 penalty in this setting. Section~\ref{sec:res_prune} evaluates pruning
-from separate weight-only checkpoints.
+from weight-only checkpoints.
 
 \vspace{-2mm}
 
@@ -160,7 +160,7 @@ than FP4's, and INT4 also trails LS--\gls{LMMSE}. The nonuniform
 E2M1 grid therefore more than halves the 4-bit SNR penalty at both
 targets. Activation quantization retains FP4's advantage (Fig.~\ref{fig:bler_qat}).
 
-To examine this gap, we apply the per-channel abs-max normalization in
+We apply the per-channel abs-max normalization in
 \eqref{eq:absmax_scale} to the $0.404$\,M trained \texttt{FP32}
 prune-eligible pointwise and dense weights
 (Fig.~\ref{fig:weight_hist}). For a normalized weight $w$, $65\%$ of
