@@ -3,14 +3,13 @@
 \label{conclusion}
 Eight-bit weight--activation \gls{QAT} preserves link performance and
 reduces modeled feature-map traffic in a standard-compliant 5G~NR
-MU-\gls{MIMO} neural receiver. At 4~bits, 50\% pruning changes FP4 by
-at most $0.1$\,dB. FP4 outperforms \gls{LS}--\gls{LMMSE}, whereas INT4
-performs poorly. Analytically, the weight-activation quantization followed by pruning achieves $66\times$ and
+MU-\gls{MIMO} neural receiver. FP4 outperforms \gls{LS}--\gls{LMMSE}, whereas INT4
+performs poorly, supporting microscaling formats for neural receivers \cite{rouhani2023microscaling,ocp2023mx}. Analytically, the weight-activation quantization followed by pruning achieves $66\times$ and
 $8.8\times$ reductions in bit-operations and weight storage,
 respectively. This robustness aligns with FP4's denser near-zero grid
 and lower residual-path sparsity.
 
 Future work will pursue hardware-efficient 2:4 structured sparsity and native
-MXFP4 block scaling \cite{ocp2023mx}. Distillation-augmented \gls{QAT} offers a
+MXFP4 block scaling. Distillation-augmented \gls{QAT} offers a
 complementary route to further improve ultra-low-bit neural receiver link performance
 \cite{yawei_qat_distillation}.

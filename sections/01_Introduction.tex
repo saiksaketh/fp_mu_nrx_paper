@@ -11,7 +11,7 @@ simulation-trained receivers transfer to single-antenna
 software-defined radios, improving with site-matched training
 \cite{riku_ota}. Deployment relies on \glspl{GPU} for real-time RAN
 compute, yet a reported neural receiver requires
-$\sim26$\,TFLOP/s, motivating quantization to reduce storage, traffic,
+$\sim26$\,TFLOP/s, motivating quantization to reduce storage, memory traffic,
 and bit-operation complexity \cite{ran_accelerated_compute_reinhard, park_simd}.
 
 Prior integer weight-only \gls{QAT} for a \gls{SIMO} convolutional
@@ -31,10 +31,14 @@ pruning, and characterize residual-kernel sparsity.
 Our contributions are threefold:
 \begin{itemize}
   \item Adding INT8 post-\gls{ReLU} activation quantization to 8-bit
-    weight-\gls{QAT} models changes the required $E_b/N_0$ by at most
+    weight-\gls{QAT} models degrades the required $E_b/N_0$ by at most
     $0.08$\,dB.
   \item At 4~bits, FP4~(E2M1) outperforms INT4 before and after $50\%$
     unstructured pruning.
   \item An analytic model quantifies weight storage and bit-operations.
 \end{itemize}
 Weight--activation \gls{QAT} and pruning are evaluated separately.
+%This paper is organized as follows.
+%Section~\ref{sec:sys_nrx} describes the uplink model and the GNN--CNN
+%receiver. Section~\ref{sec:nrx_qat} presents weight and activation \gls{QAT}
+%together with unstructured pruning and subsequent sections discuss results and performance analysis.
