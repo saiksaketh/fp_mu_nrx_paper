@@ -124,8 +124,10 @@ model and a 50\%-pruned model. Experiments use the 3GPP-compliant
 two-user PUSCH setup and optimizer budgets in
 Table~\ref{tab:sim_params}. We report \gls{BLER} versus rate-adjusted $E_b/N_0$ at the $10\%$ and
 $1\%$ operating points. Baselines include the full-precision (\texttt{FP32}) neural receiver,
-LS channel estimation with \gls{LMMSE} equalization, \gls{LMMSE} channel
-estimation with K-Best detection, and ideal K-Best detection with
+LS channel estimation with LMMSE equalization, LMMSE channel
+estimation with K-Best detection,\footnote{LS--LMMSE and LMMSE--K-Best use
+floating-point arithmetic. Fixed-point arithmetic may increase
+\gls{BLER} due to additional quantization error.} and ideal K-Best detection with
 perfect CSI (Fig.~\ref{fig:BLER}). An analytic model estimates storage
 and bit-operations on the evaluation graph.
 
@@ -141,9 +143,7 @@ $0.05$\,dB of \texttt{FP32} at $10\%$ and $1\%$ \gls{BLER}. Adding A8
 to the weight-only checkpoints changes the required $E_b/N_0$ by at
 most $0.08$\,dB at either target. Both receivers outperform LS--\gls{LMMSE}
 by approximately $1.83$--$1.91$\,dB and remain within
-$\sim0.2$\,dB of \gls{LMMSE}--K-Best.\footnote{LS--\gls{LMMSE} and \gls{LMMSE}--K-Best use
-floating-point arithmetic. Fixed-point arithmetic may increase
-\gls{BLER} due to additional quantization error.} Thus, A8 causes no observed link
+$\sim0.2$\,dB of LMMSE--K-Best. Thus, A8 causes no observed link
 penalty in this setting. Section~\ref{sec:res_prune} evaluates pruning
 from separate weight-only checkpoints.
 
