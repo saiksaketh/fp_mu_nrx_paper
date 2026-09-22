@@ -34,7 +34,7 @@ conventional 5G~NR decoding.
 
 \subsection{Neural Receiver Architecture}
 \label{sec:architecture}
-We adopt this GNN--CNN architecture for MU-\gls{MIMO}
+We adopt the GNN--CNN architecture for MU-\gls{MIMO}
 \gls{PUSCH} reception \cite{scamnrx,wiesmayr2024design,neural_rx}. Each resource element has 18
 input features. An input CNN with
 channel sequence $18{\to}128{\to}128{\to}56$ initializes a state of
@@ -58,7 +58,7 @@ Training minimizes bitwise \gls{BCE} with an auxiliary
 channel-estimation loss. At iteration $k$, for coded bit $b\in\{0,1\}$,
 let $\hat{L}^{(k)}$ denote the predicted \gls{LLR}, with positive
 values favoring $b=1$, and let $\mathbf{h}$ and $\hat{\mathbf{h}}^{(k)}$
-denote the true and estimated channel vectors. The objective is
+denote the true and estimated channel vectors respectively. The objective is
 \begin{align}
   \label{eq:total_loss}
     \mathcal{L}

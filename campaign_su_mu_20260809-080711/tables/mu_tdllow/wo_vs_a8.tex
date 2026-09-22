@@ -3,7 +3,7 @@
     \caption{Weight-only QAT vs.\ W+A8 on TDL-B100/400 \& TDL-C300/100, interpolated from
     the same paired eval. W is the weight-QAT checkpoint; W+A8 is
     quantization-aware fine-tuning of that checkpoint with INT8 asymmetric
-    post-\gls{ReLU} activations Table~\ref{tab:sim_params}.
+    post-\gls{ReLU} activations based on Table~\ref{tab:sim_params}.
     $\Delta$ is $E_b/N_0$ of W+A8 minus W.}
     \label{tab:wo_vs_a8}
     \begin{tabular}{lcccc}
@@ -15,9 +15,9 @@
     FP8 (E4M3) & 2.29 & 2.30 & +0.00 & +0.01 \\
     INT8 & 2.24 & 2.31 & +0.08 & +0.01 \\
     FP4 (E2M1) & 3.62 & 3.62 & +0.00 & $-0.01$ \\
-    INT4$^{\ddagger}$ & 5.60 & 5.29 & $-0.32$ & $-0.33$ \\
+    INT4$^{\ddagger}$ & 5.60 & 5.59 & $-0.01$ & $-0.01$ \\
     \bottomrule
     \end{tabular}\\[2pt]
-    \footnotesize{$^{\ddagger}$For INT4, negative $\Delta$ reflects quantization-aware fine-tuning of the weight-only parent, not a benefit from activation quantization.}
+    \footnotesize{$^{\ddagger}$Negative $\Delta$ reflects quantization-aware fine-tuning of the weight-only parent, not a benefit from activation quantization.}
     \end{table}
     
