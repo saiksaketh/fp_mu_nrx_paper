@@ -122,7 +122,8 @@ We evaluate weight \gls{QAT} with FP8~(E4M3), INT8, FP4~(E2M1), and
 INT4. From each weight-only checkpoint, we separately derive a W$b$A8
 model and a 50\%-pruned model. Experiments use the 3GPP-compliant
 two-user PUSCH setup and optimizer budgets in
-Table~\ref{tab:sim_params}. We report \gls{BLER} versus rate-adjusted $E_b/N_0$ at $10\%$ and
+Table~\ref{tab:sim_params}.\footnote{Model weights and experiment scripts will be released at \url{https://github.com/saiksaketh/quantized_neural_rx/tree/feature/nrx-qat} upon acceptance to a possible IEEE conference venue.}
+We report \gls{BLER} versus rate-adjusted $E_b/N_0$ at $10\%$ and
 $1\%$ targets. Baselines include the full-precision (\texttt{FP32}) neural receiver,
 LS channel estimation with \gls{LMMSE} equalization, \gls{LMMSE} channel
 estimation with K-Best detection, and ideal K-Best detection with
